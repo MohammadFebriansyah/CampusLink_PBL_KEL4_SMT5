@@ -4,6 +4,55 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Fonts */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
+
+    /* CampusLink color palette */
+    --color-primary: #5651b6;
+    --color-secondary: #6049c6;
+    --color-carbon: #181925;
+    --color-graphite: #666666;
+    --color-ash: #999999;
+    --color-fog: #e8e8e8;
+    --color-linen: #fafafa;
+    --color-mist: #f5f5f5;
+    --color-paper-white: #ffffff;
+    --color-lavender: #918df6;
+    --color-iris: #9580ff;
+    --color-sky-brand: #2c78fc;
+    --color-mint: #33c758;
+    --color-ember: #ff3e00;
+    --color-amber-brand: #ffa600;
+
+    --color-surface: #fbf8ff;
+    --color-on-surface: #1a1b27;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #918df6;
+    --color-secondary-container: #9581ff;
+    --color-on-secondary-container: #2c008f;
+    --color-secondary-fixed: #e6deff;
+    --color-secondary-fixed-dim: #c9beff;
+    --color-outline: #777583;
+    --color-outline-variant: #c8c4d4;
+
+    /* Spacing */
+    --spacing-margin-mobile: 1rem;
+    --spacing-margin: 2rem;
+    --spacing-gutter: 1.5rem;
+    --spacing-gutter-mobile: 0.75rem;
+}
+
+/* Base resets */
+@layer base {
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        overscroll-behavior: none;
+    }
+    ::-webkit-scrollbar {
+        display: none;
+    }
 }
