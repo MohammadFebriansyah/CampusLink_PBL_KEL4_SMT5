@@ -14,6 +14,10 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/register/dosen', [RegisterLecturerController::class, 'create'])->name('register.dosen');
     Route::post('/register/dosen', [RegisterLecturerController::class, 'store'])->name('register.dosen.store');
+
+    Route::get('/register/mitra', function () {
+        return view('auth.register-industry');
+    })->name('register.industry');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
