@@ -42,8 +42,8 @@
 
             {{-- Auth Buttons --}}
             <div class="flex items-center gap-2">
-                <a class="hidden md:inline-flex px-3 py-1.5 text-sm font-medium text-graphite hover:text-carbon transition-colors" href="#">Masuk</a>
-                <a class="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-primary to-secondary text-paper-white hover:brightness-105 shadow-xs transition-all" href="#">Daftar Akun (.ac.id)</a>
+                <a class="hidden md:inline-flex px-3 py-1.5 text-sm font-medium text-graphite hover:text-carbon transition-colors" href="{{ route('login') }}">Masuk</a>
+                <a class="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-primary to-secondary text-paper-white hover:brightness-105 shadow-xs transition-all" href="{{ route('register.dosen') }}">Daftar Akun (.ac.id)</a>
             </div>
         </div>
     </header>
