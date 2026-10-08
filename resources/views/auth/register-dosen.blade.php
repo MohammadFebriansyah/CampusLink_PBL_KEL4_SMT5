@@ -87,7 +87,7 @@
                             <span class="w-1.5 h-1.5 rounded-full bg-paper-white"></span>
                             <span>Dosen (Pengajar)</span>
                         </div>
-                        <a href="#" class="flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 text-graphite hover:text-carbon transition-colors truncate">
+                        <a href="{{ route('register.industry') }}" class="flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 text-graphite hover:text-carbon transition-colors truncate">
                             <span>Mitra Industri</span>
                         </a>
                     </div>
