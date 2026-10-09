@@ -80,7 +80,7 @@
 
                     {{-- ROLE TABS SELECTOR --}}
                     <div class="bg-[#f4f3f8] p-1.5 rounded-full flex items-center justify-between gap-1 shadow-inner border border-slate-200/50">
-                        <a href="{{ route('login') }}" class="flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 text-graphite hover:text-carbon transition-colors">
+                        <a href="{{ route('register.mahasiswa') }}" class="flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 text-graphite hover:text-carbon transition-colors">
                             <span>Mahasiswa</span>
                         </a>
                         <div class="flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 bg-gradient-to-r from-primary to-secondary text-paper-white shadow-xs">

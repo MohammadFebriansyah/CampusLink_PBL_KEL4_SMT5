@@ -38,4 +38,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Lecturer::class);
     }
+
+    /**
+     * Get the student profile associated with the user.
+     */
+    public function student(): HasOne
+    {
+        return $this->hasOne(Student::class);
+    }
 }
