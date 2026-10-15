@@ -9,15 +9,15 @@
         <div>
             <p class="font-medium">Informasi</p>
             <ul class="mt-3 space-y-2 text-graphite">
-                <li><a href="{{ route('magang.index') }}" class="hover:text-primary hover:underline">Magang</a></li>
-                <li><a href="{{ route('lomba.index') }}" class="hover:text-primary hover:underline">Lomba</a></li>
-                <li><a href="{{ route('beasiswa.index') }}" class="hover:text-primary hover:underline">Beasiswa</a></li>
+                <li><a href="{{ Route::has('magang.index') ? route('magang.index') : url('/magang') }}" class="hover:text-primary hover:underline">Magang</a></li>
+                <li><a href="{{ Route::has('lomba.index') ? route('lomba.index') : url('/lomba') }}" class="hover:text-primary hover:underline">Lomba</a></li>
+                <li><a href="{{ Route::has('beasiswa.index') ? route('beasiswa.index') : url('/beasiswa') }}" class="hover:text-primary hover:underline">Beasiswa</a></li>
             </ul>
         </div>
         <div>
             <p class="font-medium">Pengguna</p>
             <ul class="mt-3 space-y-2 text-graphite">
-                <li><a href="{{ route('direktori.index') }}" class="hover:text-primary hover:underline">Direktori</a></li>
+                <li><a href="{{ Route::has('direktori.index') ? route('direktori.index') : url('/direktori') }}" class="hover:text-primary hover:underline">Direktori</a></li>
                 <li><a href="{{ route('login') }}" class="hover:text-primary hover:underline">Masuk</a></li>
                 <li><a href="{{ route('register') }}" class="hover:text-primary hover:underline">Daftar</a></li>
             </ul>

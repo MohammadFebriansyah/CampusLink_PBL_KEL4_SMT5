@@ -13,18 +13,18 @@
 
             <ul class="hidden items-center gap-1 md:flex">
                 <li><a href="{{ route('home') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('home') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Beranda</a></li>
-                <li><a href="{{ route('magang.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('magang.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Magang</a></li>
-                <li><a href="{{ route('lomba.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('lomba.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Lomba</a></li>
-                <li><a href="{{ route('beasiswa.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('beasiswa.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Beasiswa</a></li>
+                <li><a href="{{ Route::has('magang.index') ? route('magang.index') : url('/magang') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('magang.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Magang</a></li>
+                <li><a href="{{ Route::has('lomba.index') ? route('lomba.index') : url('/lomba') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('lomba.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Lomba</a></li>
+                <li><a href="{{ Route::has('beasiswa.index') ? route('beasiswa.index') : url('/beasiswa') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('beasiswa.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Beasiswa</a></li>
                 @if (! auth()->check() || in_array(auth()->user()->role, ['mahasiswa', 'dosen'], true))
-                <li><a href="{{ route('direktori.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('direktori.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Direktori</a></li>
+                <li><a href="{{ Route::has('direktori.index') ? route('direktori.index') : url('/direktori') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('direktori.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Direktori</a></li>
                 @endif
                 @auth
                     @if (auth()->user()->role === 'mahasiswa')
-                        <li><a href="{{ route('kegiatan.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('kegiatan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Kegiatan saya</a></li>
+                        <li><a href="{{ Route::has('kegiatan.index') ? route('kegiatan.index') : '#' }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('kegiatan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Kegiatan saya</a></li>
                     @elseif (auth()->user()->role === 'dosen')
                         @php $permintaanBimbingan = auth()->user()->bimbinganMasuk()->where('status', 'menunggu')->count(); @endphp
-                        <li><a href="{{ route('bimbingan.index') }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('bimbingan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Bimbingan @if ($permintaanBimbingan > 0)<span class="rounded-full bg-accent px-1.5 text-[11px] font-bold text-navy">{{ $permintaanBimbingan }}</span>@endif</a></li>
+                        <li><a href="{{ Route::has('bimbingan.index') ? route('bimbingan.index') : '#' }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('bimbingan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Bimbingan @if ($permintaanBimbingan > 0)<span class="rounded-full bg-accent px-1.5 text-[11px] font-bold text-navy">{{ $permintaanBimbingan }}</span>@endif</a></li>
                     @endif
                 @endauth
             </ul>
@@ -33,6 +33,7 @@
                 @auth
                     @php
                         $panel = auth()->user()->panel();
+                        $rutePanel = Route::has($panel['rute']) ? route($panel['rute']) : route('home');
                     @endphp
                     @php
                         $saya = auth()->user();
@@ -46,16 +47,16 @@
                     @endphp
                     @if ($profilSaya)
                         {{-- Lingkaran foto profil (inisial bila belum ada foto). Di HP tampil tanpa tulisan. --}}
-                        <a href="{{ route($panel['rute']) }}" title="Profil saya"
+                        <a href="{{ $rutePanel }}" title="Profil saya"
                            class="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 text-sm font-medium tracking-[-0.32px] transition hover:bg-mist sm:pr-3 {{ request()->routeIs('profil.*') ? 'bg-primary/10 text-primary' : '' }}">
                             @include('direktori._avatar', ['profil' => $profilSaya, 'nama' => $saya->name, 'ukuran' => 'size-8', 'teks' => 'text-[11px]', 'cincin' => 'ring-2 ring-accent/60', 'alt' => 'Foto profil ' . $saya->name])
                             <span class="hidden sm:inline">{{ $panel['label'] }}</span>
                         </a>
                     @else
-                        <a href="{{ route($panel['rute']) }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">{{ $panel['label'] }}</a>
+                        <a href="{{ $rutePanel }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">{{ $panel['label'] }}</a>
                     @endif
                     @if (auth()->user()->role === 'mitra')
-                        <a href="{{ route('mitra.profil.show') }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">Profil</a>
+                        <a href="{{ Route::has('mitra.profil.show') ? route('mitra.profil.show') : route('home') }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">Profil</a>
                     @endif
                     <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
                         @csrf
@@ -76,23 +77,27 @@
 
         <div x-cloak x-show="open" x-transition.origin.top @click.outside="open = false" class="mb-3 rounded-card border border-fog bg-paper-white p-2 shadow-subtle-3 md:hidden">
             <a href="{{ route('home') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Beranda</a>
-            <a href="{{ route('magang.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Magang</a>
-            <a href="{{ route('lomba.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Lomba</a>
-            <a href="{{ route('beasiswa.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Beasiswa</a>
+            <a href="{{ Route::has('magang.index') ? route('magang.index') : url('/magang') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Magang</a>
+            <a href="{{ Route::has('lomba.index') ? route('lomba.index') : url('/lomba') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Lomba</a>
+            <a href="{{ Route::has('beasiswa.index') ? route('beasiswa.index') : url('/beasiswa') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Beasiswa</a>
             @if (! auth()->check() || in_array(auth()->user()->role, ['mahasiswa', 'dosen'], true))
-            <a href="{{ route('direktori.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Direktori</a>
+            <a href="{{ Route::has('direktori.index') ? route('direktori.index') : url('/direktori') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Direktori</a>
             @endif
             @auth
                 @if (auth()->user()->role === 'mahasiswa')
-                    <a href="{{ route('kegiatan.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Kegiatan saya</a>
+                    <a href="{{ Route::has('kegiatan.index') ? route('kegiatan.index') : '#' }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Kegiatan saya</a>
                 @elseif (auth()->user()->role === 'dosen')
-                    <a href="{{ route('bimbingan.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Bimbingan</a>
+                    <a href="{{ Route::has('bimbingan.index') ? route('bimbingan.index') : '#' }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Bimbingan</a>
                 @endif
             @endauth
             @auth
-                <a href="{{ route($panel['rute']) }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">{{ $panel['label'] }}</a>
+                @php
+                    $panel = auth()->user()->panel();
+                    $rutePanel = Route::has($panel['rute']) ? route($panel['rute']) : route('home');
+                @endphp
+                <a href="{{ $rutePanel }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">{{ $panel['label'] }}</a>
                 @if (auth()->user()->role === 'mitra')
-                    <a href="{{ route('mitra.profil.show') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Profil</a>
+                    <a href="{{ Route::has('mitra.profil.show') ? route('mitra.profil.show') : route('home') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Profil</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
