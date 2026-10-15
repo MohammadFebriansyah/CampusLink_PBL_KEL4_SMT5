@@ -1,59 +1,333 @@
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
-@import './register-industry.css';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
 
+/* ------------------------------------------------------------------
+   Token desain CampusLink (referensi: DESIGN.md "Visitors")
+   Font: OpenRunde berlisensi, jadi diganti Inter sesuai saran DESIGN.md.
+   Jika suatu hari punya lisensi OpenRunde, cukup pasang @font-face-nya;
+   nama 'OpenRunde' sudah berada paling depan di font stack.
+------------------------------------------------------------------- */
 @theme {
-    /* Fonts */
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'OpenRunde', 'Inter Variable', ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-    /* CampusLink color palette */
-    --color-primary: #5651b6;
-    --color-secondary: #6049c6;
+    /* Warna */
     --color-carbon: #181925;
-    --color-graphite: #666666;
-    --color-ash: #999999;
-    --color-fog: #e8e8e8;
+    --color-paper-white: #ffffff;
     --color-linen: #fafafa;
     --color-mist: #f5f5f5;
-    --color-paper-white: #ffffff;
+    --color-fog: #e8e8e8;
+    --color-ash: #999999;
+    --color-graphite: #666666;
     --color-lavender: #918df6;
     --color-iris: #9580ff;
-    --color-sky-brand: #2c78fc;
     --color-mint: #33c758;
+    --color-mint-wash: #def6e4;
+    --color-amber: #ffa600;
+    --color-sky: #2c78fc;
+    --color-magenta: #d6409f;
     --color-ember: #ff3e00;
-    --color-amber-brand: #ffa600;
+    /* Identitas: navy kampus + aksen oranye */
+    --color-navy: #0f1e3d;
+    --color-navy-2: #1b2f5e;
+    --color-primary: #1e40af;
+    --color-primary-dark: #1e3a8a;
+    --color-primary-wash: #eef2fb;
+    --color-accent: #f97316;
+    --color-accent-dark: #c2410c;
+    --color-accent-wash: #fff4ec;
 
-    --color-surface: #fbf8ff;
-    --color-on-surface: #1a1b27;
-    --color-on-primary: #ffffff;
-    --color-primary-container: #918df6;
-    --color-secondary-container: #9581ff;
-    --color-on-secondary-container: #2c008f;
-    --color-secondary-fixed: #e6deff;
-    --color-secondary-fixed-dim: #c9beff;
-    --color-outline: #777583;
-    --color-outline-variant: #c8c4d4;
+    /* Skala tipografi: ukuran / line-height / letter-spacing */
+    --text-caption: 12px;
+    --text-caption--line-height: 1.33;
+    --text-caption--letter-spacing: -0.32px;
+    --text-body: 16px;
+    --text-body--line-height: 1.5;
+    --text-body--letter-spacing: -0.32px;
+    --text-subheading: 18px;
+    --text-subheading--line-height: 1.33;
+    --text-subheading--letter-spacing: -0.32px;
+    --text-heading-sm: 24px;
+    --text-heading-sm--line-height: 1.17;
+    --text-heading-sm--letter-spacing: -0.31px;
+    --text-heading: 36px;
+    --text-heading--line-height: 1.22;
+    --text-heading--letter-spacing: -0.61px;
+    --text-heading-lg: 48px;
+    --text-heading-lg--line-height: 1;
+    --text-heading-lg--letter-spacing: -0.34px;
+    --text-display: 60px;
+    --text-display--line-height: 1.13;
+    --text-display--letter-spacing: -3px;
 
-    /* Spacing */
-    --spacing-margin-mobile: 1rem;
-    --spacing-margin: 2rem;
-    --spacing-gutter: 1.5rem;
-    --spacing-gutter-mobile: 0.75rem;
+    /* Bentuk */
+    --radius-input: 8px;
+    --radius-card: 16px;
+    --radius-table: 24px;
+
+    /* Bayangan (maksimal tiga lapis sesuai DESIGN.md) */
+    --shadow-subtle: rgba(0, 0, 0, 0.08) 0px 1px 1px 1px, rgba(0, 0, 0, 0.06) 0px 0px 0px 0.5px;
+    --shadow-subtle-2: rgba(0, 0, 0, 0.08) 0px 1px 1px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+    --shadow-subtle-3: rgba(0, 0, 0, 0.06) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 8px 16px 0px,
+        rgba(0, 0, 0, 0.02) 0px 0px 0px 1px;
+
+    /* Lebar halaman */
+    --container-page: 1200px;
 }
 
-/* Base resets */
 @layer base {
-    html, body {
-        margin: 0;
-        padding: 0;
+    html {
+        scroll-padding-top: 5rem;
+        /* agar tautan #anchor tidak tertutup header sticky */
     }
+
     body {
-        overscroll-behavior: none;
+        @apply bg-paper-white text-body text-carbon antialiased;
     }
-    ::-webkit-scrollbar {
-        display: none;
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    /* Fokus keyboard terlihat. Memakai Carbon agar kontras di atas Lavender. */
+    :focus-visible {
+        outline: 2px solid var(--color-carbon);
+        outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/* ------------------------------------------------------------------
+   Kelas komponen kecil agar utility tidak diulang di tiap halaman.
+------------------------------------------------------------------- */
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center rounded-full text-sm font-medium tracking-[-0.32px] transition-colors;
+    }
+
+    /* CTA utama: oranye dengan teks navy (kontras di atas 6:1). */
+    .btn-primary {
+        @apply bg-accent px-5 py-2.5 font-semibold text-navy shadow-[0_6px_16px_-6px_rgb(249_115_22/0.6)] hover:bg-[#fb8a3c];
+    }
+
+    .btn-outline {
+        @apply border border-fog bg-paper-white px-4 py-2 text-carbon hover:border-primary/40 hover:bg-primary-wash;
+    }
+
+    /* Tombol Daftar di navigasi. */
+    .btn-register {
+        @apply bg-accent px-4 py-2 font-semibold text-navy shadow-[0_6px_16px_-6px_rgb(249_115_22/0.6)] hover:bg-[#fb8a3c];
+    }
+
+    .btn-ghost {
+        @apply px-5 py-2.5 text-graphite hover:bg-mist hover:text-carbon;
+    }
+
+    .chip {
+        @apply inline-flex items-center gap-2 rounded-full border border-fog bg-paper-white px-3 py-1.5 text-sm font-medium tracking-[-0.32px];
+    }
+
+    .tag {
+        @apply inline-flex items-center rounded-full bg-mist px-3 py-1 text-caption font-medium text-graphite;
+    }
+
+    .card {
+        @apply rounded-card border border-fog bg-paper-white p-5;
+    }
+
+    .field {
+        @apply w-full rounded-input border border-fog bg-mist px-3 py-2.5 text-body text-carbon placeholder:text-ash focus:border-primary focus:bg-paper-white;
+    }
+
+    .tab {
+        @apply border-b-2 border-transparent px-1 pb-2 text-sm font-medium tracking-[-0.32px] text-ash hover:text-carbon;
+    }
+
+    .tab-active {
+        @apply border-primary text-carbon;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Hero landing page: latar biru gelap, foto/ilustrasi yang melayang,
+   dan kartu fitur yang bergerak naik-turun di sekitar orang.
+------------------------------------------------------------------- */
+@theme {
+    --color-night: #0b1640;
+    --color-royal: #1d3fae;
+
+    --animate-float: float 6s ease-in-out infinite;
+    --animate-float-slow: float 8s ease-in-out infinite;
+    --animate-bob: bob 7s ease-in-out infinite;
+    --animate-glow: glow 6s ease-in-out infinite;
+    --animate-pop-in: pop-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+    --animate-rise: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    --animate-wave: wave 2.4s ease-in-out infinite;
+    --animate-word: word 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    --animate-spin-slow: spin 40s linear infinite;
+    --animate-spin-rev: spin-rev 60s linear infinite;
+    --animate-draw: draw 0.9s 0.2s cubic-bezier(0.6, 0, 0.2, 1) both;
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-14px);
+        }
+    }
+
+    @keyframes bob {
+
+        0%,
+        100% {
+            transform: translateY(0) rotate(0deg);
+        }
+
+        50% {
+            transform: translateY(-10px) rotate(-1deg);
+        }
+    }
+
+    @keyframes glow {
+
+        0%,
+        100% {
+            opacity: 0.55;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.9;
+            transform: scale(1.08);
+        }
+    }
+
+    @keyframes pop-in {
+        from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.92);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes rise {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes wave {
+
+        0%,
+        100% {
+            transform: rotate(0deg);
+        }
+
+        50% {
+            transform: rotate(-9deg);
+        }
+    }
+
+    @keyframes spin-rev {
+        to {
+            transform: rotate(-360deg);
+        }
+    }
+
+    @keyframes draw {
+        from {
+            stroke-dashoffset: 1;
+        }
+
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes word {
+        from {
+            opacity: 0;
+            transform: translateY(0.4em);
+            filter: blur(4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+    }
+}
+
+@layer components {
+    .hero-grid {
+        background-image:
+            linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(ellipse at 50% 40%, #000 30%, transparent 75%);
+    }
+
+    /* Pola titik halus untuk latar navy. */
+    .hero-dots {
+        background-image: radial-gradient(rgb(255 255 255 / 0.12) 1px, transparent 1px);
+        background-size: 22px 22px;
+        mask-image: linear-gradient(to bottom, #000 40%, transparent 95%);
+    }
+
+    /* Kartu info asli yang melayang di dekat ilustrasi. */
+    .sorotan-card {
+        @apply flex w-[210px] flex-col gap-1.5 rounded-2xl border-l-4 bg-paper-white p-3 text-left shadow-[0_16px_36px_-10px_rgb(5_12_35/0.55)] transition hover:-translate-y-0.5 sm:w-[240px] sm:p-3.5;
+    }
+
+    /* Pembungkus kartu: posisi + gerak mengikuti mouse (paralaks). */
+    .hero-float {
+        @apply absolute z-20;
+        transform: translate3d(calc(var(--mx, 0) * var(--depth, 10px)), calc(var(--my, 0) * var(--depth, 10px)), 0);
+        transition: transform 0.4s ease-out;
+    }
+
+    .hero-card {
+        @apply flex items-center gap-3 rounded-2xl bg-paper-white/95 px-3.5 py-2.5 text-left shadow-[0_12px_32px_-8px_rgb(8_20_70/0.45)] ring-1 ring-white/60 backdrop-blur-md sm:px-4 sm:py-3;
+    }
+
+    .hero-card-icon {
+        @apply flex size-8 shrink-0 items-center justify-center rounded-xl sm:size-9;
+    }
+
+    .hero-card-title {
+        @apply text-[13px] leading-tight font-semibold text-carbon sm:text-sm;
+    }
+
+    .hero-card-text {
+        @apply text-[11px] leading-tight text-graphite sm:text-xs;
     }
 }
