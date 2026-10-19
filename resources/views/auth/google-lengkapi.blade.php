@@ -3,18 +3,12 @@
 @section('title', 'Lengkapi pendaftaran')
 
 @section('content')
-    @php
-        $tab = ($pending['kampus'] ?? false)
-            ? ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen', 'mitra' => 'Mitra']
-            : ['mitra' => 'Mitra'];
-    @endphp
-
     <section class="mx-auto max-w-lg px-4 py-12 sm:px-6 md:py-16">
         <h1 class="text-center text-heading-sm font-semibold">Lengkapi pendaftaran</h1>
         <p class="mt-2 text-center text-graphite">Akun Google Anda terverifikasi. Tinggal data kampus.</p>
 
         <nav class="mt-8 flex justify-center gap-6 border-b border-fog" aria-label="Pilih peran">
-            @foreach ($tab as $kunci => $label)
+            @foreach (['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen'] as $kunci => $label)
                 <a href="{{ route('google.lengkapi', ['peran' => $kunci]) }}"
                    class="tab {{ $peran === $kunci ? 'tab-active' : '' }}"
                    @if ($peran === $kunci) aria-current="page" @endif>{{ $label }}</a>
@@ -41,12 +35,9 @@
                 @include('partials.field', ['name' => 'kelas', 'label' => 'Kelas', 'hint' => 'Contoh: SIB-3A'])
                 @include('partials.prodi-select')
                 @include('partials.field', ['name' => 'angkatan', 'label' => 'Angkatan', 'type' => 'number', 'hint' => 'Tahun masuk, misalnya 2024.'])
-            @elseif ($peran === 'dosen')
+            @else
                 @include('partials.field', ['name' => 'nidn', 'label' => 'NIDN'])
                 @include('partials.prodi-select')
-            @else
-                @include('partials.field', ['name' => 'nama_organisasi', 'label' => 'Nama organisasi'])
-                @include('partials.field', ['name' => 'kontak', 'label' => 'Kontak', 'hint' => 'Email atau nomor telepon yang bisa dihubungi.'])
             @endif
 
             <button type="submit" class="btn btn-primary w-full py-3">Selesai dan masuk</button>

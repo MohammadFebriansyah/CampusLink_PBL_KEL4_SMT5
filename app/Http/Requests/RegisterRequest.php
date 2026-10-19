@@ -31,28 +31,18 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
 
-        $emailKampus = fn(string $peran) => [
-            'required',
-            'email',
-            'max:255',
-            'unique:users,email',
-            function ($atribut, $nilai, $gagal) use ($peran) {
-                if (! Kampus::emailSesuaiPeran((string) $nilai, $peran)) {
-                    $gagal(ucfirst($peran) . ' wajib memakai email ' . Kampus::labelDomain($peran) . '.');
-                }
-            },
-        ];
+        $emailKampus = ['required', 'email', 'max:255', 'unique:users,email', 'ends_with:@polinema.ac.id'];
 
         return match ($this->input('peran')) {
             User::ROLE_MAHASISWA => $umum + [
-                'email' => $emailKampus(User::ROLE_MAHASISWA),
+                'email' => $emailKampus,
                 'nim' => ['required', 'string', 'max:20', 'unique:mahasiswa,nim'],
                 'kelas' => ['required', 'string', 'max:20'],
                 'program_studi' => ['required', Rule::in(Kampus::semuaProdi())],
                 'angkatan' => ['required', 'integer', 'between:2000,' . date('Y')],
             ],
             User::ROLE_DOSEN => $umum + [
-                'email' => $emailKampus(User::ROLE_DOSEN),
+                'email' => $emailKampus,
                 'nidn' => ['required', 'string', 'max:20', 'unique:dosen,nidn'],
                 'program_studi' => ['required', Rule::in(Kampus::semuaProdi())],
             ],
@@ -66,5 +56,12 @@ class RegisterRequest extends FormRequest
                 'email' => ['required', 'email', 'max:255'],
             ],
         };
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.ends_with' => 'Mahasiswa dan dosen wajib memakai email @polinema.ac.id.',
+        ];
     }
 }
