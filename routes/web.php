@@ -71,23 +71,14 @@ Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.
 Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('google.callback');
 
 Route::middleware('guest')->group(function () {
-    // Canonical routes sesuai referensi
+    // Rute masuk sesuai referensi
     Route::get('/masuk', [LoginController::class, 'create'])->name('login');
     Route::post('/masuk', [LoginController::class, 'store'])->name('login.store');
+    Route::get('/login', fn () => redirect()->route('login'));
 
-    // Kompatibilitas URL lama tanpa duplikasi nama route
-    Route::get('/login', [LoginController::class, 'create']);
-    Route::post('/login', [LoginController::class, 'store']);
-
-    // Registrasi terpadu
+    // Registrasi terpadu sesuai referensi (Mahasiswa, Dosen, Mitra)
     Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
     Route::post('/daftar', [RegisterController::class, 'store'])->name('register.store');
-    Route::get('/daftar/verifikasi', [RegisterController::class, 'verifikasi'])->name('register.verifikasi');
-    Route::post('/daftar/verifikasi', [RegisterController::class, 'konfirmasi'])
-        ->middleware('throttle:10,1')->name('register.konfirmasi');
-    Route::post('/daftar/verifikasi/kirim-ulang', [RegisterController::class, 'kirimUlang'])->name('register.kirim-ulang');
-
-    // Kompatibilitas URL /register lama
     Route::get('/register', fn () => redirect()->route('register'));
 
     // Melengkapi pendaftaran setelah verifikasi Google (NIM/NIDN, program studi).
