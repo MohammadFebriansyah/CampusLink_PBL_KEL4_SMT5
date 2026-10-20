@@ -1,15 +1,23 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminInformasiController;
+use App\Http\Controllers\AdminKeahlianController;
+use App\Http\Controllers\AdminMitraController;
+use App\Http\Controllers\AdminPenggunaController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BimbinganController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InformasiController;
+use App\Http\Controllers\DirektoriController;
 use App\Http\Controllers\FotoProfilController;
 use App\Http\Controllers\PendaftaranController;
+use App\Http\Controllers\PeninjauanController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\MitraDashboardController;
+use App\Http\Controllers\MitraInformasiController;
 use App\Http\Controllers\MitraProfilController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
@@ -29,8 +37,8 @@ Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen,mitra,admin'])-
 
 // Direktori hanya untuk mahasiswa dan dosen (UC-06).
 Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen'])->group(function () {
-    Route::get('/direktori', fn() => redirect()->route('home'))->name('direktori.index');
-    Route::get('/direktori/{id}', fn() => redirect()->route('home'))->whereNumber('id')->name('direktori.show');
+    Route::get('/direktori', [DirektoriController::class, 'index'])->name('direktori.index');
+    Route::get('/direktori/{id}', [DirektoriController::class, 'show'])->whereNumber('id')->name('direktori.show');
 });
 
 // Mahasiswa: mendaftar dengan CV (kegiatan yang didaftar lewat CampusLink) dan mengajukan bimbingan ke dosen.
@@ -91,7 +99,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/daftar/google', [GoogleController::class, 'simpan'])->name('google.simpan');
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/keluar', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 // Mitra: dasbor, profil organisasi, dan kelola informasi milik sendiri.
 // EnsureRole memastikan akun aktif dan sudah diverifikasi admin; kepemilikan data diperiksa Policy.
@@ -101,11 +109,62 @@ Route::middleware(['auth', EnsureRole::class . ':mitra'])->prefix('mitra')->grou
     Route::put('/profil', [MitraProfilController::class, 'update'])->name('mitra.profil.update');
 
     // Pendaftar informasi milik mitra ini
-    Route::get('/pendaftar', fn () => redirect()->route('mitra.dashboard'))->defaults('panel', 'mitra')->name('mitra.pendaftar.index');
+    // Pendaftar informasi milik mitra ini
+    Route::get('/pendaftar', [PeninjauanController::class, 'index'])->defaults('panel', 'mitra')->name('mitra.pendaftar.index');
+    Route::get('/pendaftar/{id}', [PeninjauanController::class, 'show'])->defaults('panel', 'mitra')->whereNumber('id')->name('mitra.pendaftar.show');
+    Route::patch('/pendaftar/{id}/terima', [PeninjauanController::class, 'terima'])->whereNumber('id')->name('mitra.pendaftar.terima');
+    Route::patch('/pendaftar/{id}/tolak', [PeninjauanController::class, 'tolak'])->whereNumber('id')->name('mitra.pendaftar.tolak');
 
     Route::prefix('{kategori}')->where(['kategori' => 'magang|lomba|beasiswa'])->group(function () {
-        Route::get('/', fn ($kategori) => redirect()->route('mitra.dashboard'))->name('mitra.informasi.index');
-        Route::get('/buat', fn ($kategori) => redirect()->route('mitra.dashboard'))->name('mitra.informasi.create');
+        Route::get('/', [MitraInformasiController::class, 'index'])->name('mitra.informasi.index');
+        Route::get('/buat', [MitraInformasiController::class, 'create'])->name('mitra.informasi.create');
+        Route::post('/', [MitraInformasiController::class, 'store'])->name('mitra.informasi.store');
+        Route::get('/{id}/ubah', [MitraInformasiController::class, 'edit'])->whereNumber('id')->name('mitra.informasi.edit');
+        Route::put('/{id}', [MitraInformasiController::class, 'update'])->whereNumber('id')->name('mitra.informasi.update');
+        Route::delete('/{id}', [MitraInformasiController::class, 'destroy'])->whereNumber('id')->name('mitra.informasi.destroy');
     });
 });
+// Panel admin (FA-01 sampai FA-09). Akun admin dibuat pengelola sistem (seeder), bukan lewat registrasi.
+Route::middleware(['auth', EnsureRole::class . ':admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', AdminDashboardController::class)->name('dashboard');
 
+    // Verifikasi mitra
+    Route::get('/mitra', [AdminMitraController::class, 'index'])->name('mitra.index');
+    Route::patch('/mitra/{id}/setujui', [AdminMitraController::class, 'setujui'])->whereNumber('id')->name('mitra.setujui');
+    Route::patch('/mitra/{id}/tolak', [AdminMitraController::class, 'tolak'])->whereNumber('id')->name('mitra.tolak');
+
+    // Pengguna (aksi dibuat sebagai route terpisah agar jelas dan tanpa masukan yang bisa dimanipulasi)
+    Route::get('/pengguna', [AdminPenggunaController::class, 'index'])->name('pengguna.index');
+    Route::get('/pengguna/{id}', [AdminPenggunaController::class, 'show'])->whereNumber('id')->name('pengguna.show');
+    Route::get('/pengguna/{id}/ubah', [AdminPenggunaController::class, 'edit'])->whereNumber('id')->name('pengguna.edit');
+    Route::put('/pengguna/{id}', [AdminPenggunaController::class, 'update'])->whereNumber('id')->name('pengguna.update');
+    Route::patch('/pengguna/{id}/aktifkan', [AdminPenggunaController::class, 'aktifkan'])->whereNumber('id')->name('pengguna.aktifkan');
+    Route::patch('/pengguna/{id}/nonaktifkan', [AdminPenggunaController::class, 'nonaktifkan'])->whereNumber('id')->name('pengguna.nonaktifkan');
+    Route::patch('/pengguna/{id}/sembunyikan-profil', [AdminPenggunaController::class, 'sembunyikanProfil'])->whereNumber('id')->name('pengguna.sembunyikan');
+    Route::patch('/pengguna/{id}/tampilkan-profil', [AdminPenggunaController::class, 'tampilkanProfil'])->whereNumber('id')->name('pengguna.tampilkan');
+
+    // Pendaftar kegiatan kampus (informasi buatan admin yang didaftar lewat CampusLink)
+    Route::get('/pendaftar', [PeninjauanController::class, 'index'])->defaults('panel', 'admin')->name('pendaftar.index');
+    Route::get('/pendaftar/{id}', [PeninjauanController::class, 'show'])->defaults('panel', 'admin')->whereNumber('id')->name('pendaftar.show');
+    Route::patch('/pendaftar/{id}/terima', [PeninjauanController::class, 'terima'])->whereNumber('id')->name('pendaftar.terima');
+    Route::patch('/pendaftar/{id}/tolak', [PeninjauanController::class, 'tolak'])->whereNumber('id')->name('pendaftar.tolak');
+
+    // Data master keahlian
+    Route::get('/keahlian', [AdminKeahlianController::class, 'index'])->name('keahlian.index');
+    Route::post('/keahlian', [AdminKeahlianController::class, 'store'])->name('keahlian.store');
+    Route::get('/keahlian/{id}/ubah', [AdminKeahlianController::class, 'edit'])->whereNumber('id')->name('keahlian.edit');
+    Route::put('/keahlian/{id}', [AdminKeahlianController::class, 'update'])->whereNumber('id')->name('keahlian.update');
+    Route::delete('/keahlian/{id}', [AdminKeahlianController::class, 'destroy'])->whereNumber('id')->name('keahlian.destroy');
+
+    // Informasi magang, lomba, beasiswa: kelola dan moderasi
+    Route::prefix('{kategori}')->where(['kategori' => 'magang|lomba|beasiswa'])->group(function () {
+        Route::get('/', [AdminInformasiController::class, 'index'])->name('informasi.index');
+        Route::get('/buat', [AdminInformasiController::class, 'create'])->name('informasi.create');
+        Route::post('/', [AdminInformasiController::class, 'store'])->name('informasi.store');
+        Route::get('/{id}/ubah', [AdminInformasiController::class, 'edit'])->whereNumber('id')->name('informasi.edit');
+        Route::put('/{id}', [AdminInformasiController::class, 'update'])->whereNumber('id')->name('informasi.update');
+        Route::delete('/{id}', [AdminInformasiController::class, 'destroy'])->whereNumber('id')->name('informasi.destroy');
+        Route::patch('/{id}/sembunyikan', [AdminInformasiController::class, 'sembunyikan'])->whereNumber('id')->name('informasi.sembunyikan');
+        Route::patch('/{id}/tampilkan', [AdminInformasiController::class, 'tampilkan'])->whereNumber('id')->name('informasi.tampilkan');
+    });
+});
