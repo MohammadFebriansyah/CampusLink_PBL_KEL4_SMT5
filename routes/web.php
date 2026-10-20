@@ -4,11 +4,13 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BimbinganController;
+use App\Http\Controllers\FotoProfilController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InformasiController;
-use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\MitraProfilController;
+use App\Http\Controllers\PendaftaranController;
+use App\Http\Controllers\ProfilController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +18,7 @@ Route::get('/', HomeController::class)->name('home');
 
 // Daftar dan detail informasi. Semua peran yang sudah masuk boleh membaca; tamu diarahkan ke login.
 // EnsureRole dipakai (bukan hanya auth) agar akun yang dinonaktifkan saat sesi berjalan langsung ditolak.
-Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen,mitra,admin'])->group(function () {
+Route::middleware(['auth', EnsureRole::class.':mahasiswa,dosen,mitra,admin'])->group(function () {
     foreach (['magang', 'lomba', 'beasiswa'] as $kategori) {
         Route::get("/{$kategori}", [InformasiController::class, 'index'])
             ->defaults('kategori', $kategori)->name("{$kategori}.index");
@@ -26,13 +28,13 @@ Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen,mitra,admin'])-
 });
 
 // Direktori hanya untuk mahasiswa dan dosen (UC-06).
-Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen'])->group(function () {
-    Route::get('/direktori', fn() => redirect()->route('home'))->name('direktori.index');
-    Route::get('/direktori/{id}', fn() => redirect()->route('home'))->whereNumber('id')->name('direktori.show');
+Route::middleware(['auth', EnsureRole::class.':mahasiswa,dosen'])->group(function () {
+    Route::get('/direktori', fn () => redirect()->route('home'))->name('direktori.index');
+    Route::get('/direktori/{id}', fn () => redirect()->route('home'))->whereNumber('id')->name('direktori.show');
 });
 
 // Mahasiswa: mendaftar dengan CV (kegiatan yang didaftar lewat CampusLink) dan mengajukan bimbingan ke dosen.
-Route::middleware(['auth', EnsureRole::class . ':mahasiswa'])->group(function () {
+Route::middleware(['auth', EnsureRole::class.':mahasiswa'])->group(function () {
     Route::get('/kegiatan-saya', [PendaftaranController::class, 'index'])->name('kegiatan.index');
     Route::post('/{kategori}/{id}/daftar', [PendaftaranController::class, 'store'])
         ->where('kategori', 'magang|lomba|beasiswa')->whereNumber('id')->name('pendaftaran.store');
@@ -45,25 +47,28 @@ Route::middleware(['auth', EnsureRole::class . ':mahasiswa'])->group(function ()
 
 // Bukti diterima (kegiatan luar) untuk bimbingan: mahasiswa pengaju atau dosen yang dituju.
 Route::get('/bimbingan/{id}/bukti', [BimbinganController::class, 'bukti'])
-    ->middleware(['auth', EnsureRole::class . ':mahasiswa,dosen'])->whereNumber('id')->name('bimbingan.bukti');
+    ->middleware(['auth', EnsureRole::class.':mahasiswa,dosen'])->whereNumber('id')->name('bimbingan.bukti');
 
+// Foto profil dikirim lewat aplikasi agar tidak bergantung pada php artisan storage:link.
+Route::get('/foto-profil/{berkas}', FotoProfilController::class)
+    ->middleware('auth')
+    ->where('berkas', '[A-Za-z0-9]{1,100}\.(jpg|jpeg|png|webp)')
+    ->name('foto.profil');
 // CV pendaftar: pemilik, mitra pembuat informasi, atau admin (kegiatan kampus).
 Route::get('/pendaftaran/{id}/cv', [PendaftaranController::class, 'cv'])
-    ->middleware(['auth', EnsureRole::class . ':mahasiswa,mitra,admin'])->whereNumber('id')->name('pendaftaran.cv');
+    ->middleware(['auth', EnsureRole::class.':mahasiswa,mitra,admin'])->whereNumber('id')->name('pendaftaran.cv');
 
 // Dosen: permintaan bimbingan dari mahasiswa.
-Route::middleware(['auth', EnsureRole::class . ':dosen'])->group(function () {
+Route::middleware(['auth', EnsureRole::class.':dosen'])->group(function () {
     Route::get('/bimbingan', [BimbinganController::class, 'index'])->name('bimbingan.index');
     Route::patch('/bimbingan/{id}/terima', [BimbinganController::class, 'terima'])->whereNumber('id')->name('bimbingan.terima');
     Route::patch('/bimbingan/{id}/tolak', [BimbinganController::class, 'tolak'])->whereNumber('id')->name('bimbingan.tolak');
 });
 
-// Profil dan Dasbor
-Route::middleware('auth')->group(function () {
-    Route::get('/profil', fn() => redirect()->route('home'))->name('profil.show');
-    Route::get('/mitra', fn() => redirect()->route('home'))->name('mitra.dashboard');
-    Route::get('/mitra/profil', fn() => redirect()->route('home'))->name('mitra.profil.show');
-    Route::get('/admin', fn() => redirect()->route('home'))->name('admin.dashboard');
+// Mahasiswa dan dosen. Halaman /profil langsung berisi formulir ubah profil.
+Route::middleware(['auth', EnsureRole::class.':mahasiswa,dosen'])->group(function () {
+    Route::get('/profil', [ProfilController::class, 'show'])->name('profil.show');
+    Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
 });
 
 // Tanpa middleware guest: pengguna yang sudah masuk juga memakainya untuk menghubungkan akun Google.
@@ -90,7 +95,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 // Mitra: dasbor, profil organisasi, dan kelola informasi milik sendiri.
 // EnsureRole memastikan akun aktif dan sudah diverifikasi admin; kepemilikan data diperiksa Policy.
-Route::middleware(['auth', EnsureRole::class . ':mitra'])->prefix('mitra')->group(function () {
+Route::middleware(['auth', EnsureRole::class.':mitra'])->prefix('mitra')->group(function () {
     Route::get('/', MitraDashboardController::class)->name('mitra.dashboard');
     Route::get('/profil', [MitraProfilController::class, 'show'])->name('mitra.profil.show');
     Route::put('/profil', [MitraProfilController::class, 'update'])->name('mitra.profil.update');
@@ -103,4 +108,3 @@ Route::middleware(['auth', EnsureRole::class . ':mitra'])->prefix('mitra')->grou
         Route::get('/buat', fn ($kategori) => redirect()->route('mitra.dashboard'))->name('mitra.informasi.create');
     });
 });
-
