@@ -70,8 +70,7 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs($user);
-        // Karena profil.show belum terdaftar, fallback ke route('home')
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('profil.show'));
 
         // Logout
         $logoutResponse = $this->post(route('logout'));
@@ -93,7 +92,7 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('profil.show'));
     }
 
     public function test_password_salah_ditolak(): void
@@ -167,7 +166,7 @@ class LoginTest extends TestCase
             ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('profil.show'));
     }
 
     public function test_akun_nonaktif_tidak_bisa_login(): void
@@ -226,7 +225,7 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $responseDisetujui->assertRedirect(route('home'));
+        $responseDisetujui->assertRedirect(route('mitra.dashboard'));
     }
 
     public function test_middleware_ensure_role_menolak_role_yang_tidak_berhak(): void

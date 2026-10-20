@@ -89,13 +89,17 @@ Route::middleware('guest')->group(function () {
 
     // Kompatibilitas URL /register lama
     Route::get('/register', fn () => redirect()->route('register'));
+    Route::get('/register/mahasiswa', fn () => redirect()->route('register', ['peran' => 'mahasiswa']));
+    Route::get('/register/dosen', fn () => redirect()->route('register', ['peran' => 'dosen']));
+    Route::get('/register/mitra', fn () => redirect()->route('register', ['peran' => 'mitra']));
 
     // Melengkapi pendaftaran setelah verifikasi Google (NIM/NIDN, program studi).
     Route::get('/daftar/google', [GoogleController::class, 'lengkapi'])->name('google.lengkapi');
     Route::post('/daftar/google', [GoogleController::class, 'simpan'])->name('google.simpan');
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/keluar', [LoginController::class, 'destroy'])->name('logout')->middleware('auth');
+Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth');
 
 // Mitra: dasbor, profil organisasi, dan kelola informasi milik sendiri.
 // EnsureRole memastikan akun aktif dan sudah diverifikasi admin; kepemilikan data diperiksa Policy.
