@@ -6,7 +6,9 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BimbinganController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InformasiController;
+use App\Http\Controllers\FotoProfilController;
 use App\Http\Controllers\PendaftaranController;
+use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\MitraProfilController;
 use App\Http\Middleware\EnsureRole;
@@ -47,6 +49,11 @@ Route::middleware(['auth', EnsureRole::class . ':mahasiswa'])->group(function ()
 Route::get('/bimbingan/{id}/bukti', [BimbinganController::class, 'bukti'])
     ->middleware(['auth', EnsureRole::class . ':mahasiswa,dosen'])->whereNumber('id')->name('bimbingan.bukti');
 
+// Foto profil dikirim lewat aplikasi agar tidak bergantung pada php artisan storage:link.
+Route::get('/foto-profil/{berkas}', FotoProfilController::class)
+    ->middleware('auth')
+    ->where('berkas', '[A-Za-z0-9]{1,100}\.(jpg|jpeg|png|webp)')
+    ->name('foto.profil');
 // CV pendaftar: pemilik, mitra pembuat informasi, atau admin (kegiatan kampus).
 Route::get('/pendaftaran/{id}/cv', [PendaftaranController::class, 'cv'])
     ->middleware(['auth', EnsureRole::class . ':mahasiswa,mitra,admin'])->whereNumber('id')->name('pendaftaran.cv');
@@ -58,12 +65,10 @@ Route::middleware(['auth', EnsureRole::class . ':dosen'])->group(function () {
     Route::patch('/bimbingan/{id}/tolak', [BimbinganController::class, 'tolak'])->whereNumber('id')->name('bimbingan.tolak');
 });
 
-// Profil dan Dasbor
-Route::middleware('auth')->group(function () {
-    Route::get('/profil', fn() => redirect()->route('home'))->name('profil.show');
-    Route::get('/mitra', fn() => redirect()->route('home'))->name('mitra.dashboard');
-    Route::get('/mitra/profil', fn() => redirect()->route('home'))->name('mitra.profil.show');
-    Route::get('/admin', fn() => redirect()->route('home'))->name('admin.dashboard');
+// Mahasiswa dan dosen. Halaman /profil langsung berisi formulir ubah profil.
+Route::middleware(['auth', EnsureRole::class . ':mahasiswa,dosen'])->group(function () {
+    Route::get('/profil', [ProfilController::class, 'show'])->name('profil.show');
+    Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
 });
 
 // Tanpa middleware guest: pengguna yang sudah masuk juga memakainya untuk menghubungkan akun Google.
