@@ -92,6 +92,10 @@ Route::middleware('guest')->group(function () {
     // Registrasi terpadu sesuai referensi (Mahasiswa, Dosen, Mitra)
     Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
     Route::post('/daftar', [RegisterController::class, 'store'])->name('register.store');
+    Route::get('/daftar/verifikasi', [RegisterController::class, 'verifikasi'])->name('register.verifikasi');
+    Route::post('/daftar/verifikasi', [RegisterController::class, 'konfirmasi'])
+        ->middleware('throttle:10,1')->name('register.konfirmasi');
+    Route::post('/daftar/verifikasi/kirim-ulang', [RegisterController::class, 'kirimUlang'])->name('register.kirim-ulang');
     Route::get('/register', fn () => redirect()->route('register'));
 
     // Melengkapi pendaftaran setelah verifikasi Google (NIM/NIDN, program studi).
