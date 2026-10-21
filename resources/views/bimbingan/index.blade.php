@@ -77,6 +77,16 @@
                             <p class="mt-3 text-sm"><span class="font-semibold">Pesan mahasiswa:</span> <span class="text-graphite">{{ $b->pesan }}</span></p>
                         @endif
 
+                        @if ($b->bukti)
+                            <p class="mt-2 text-sm">
+                                <a href="{{ route('bimbingan.bukti', $b->id) }}" target="_blank" class="inline-flex items-center gap-1 font-medium text-accent-dark hover:underline">
+                                    Lihat bukti diterima &rarr;
+                                </a>
+                            </p>
+                        @elseif ($b->informasi?->lewatCampuslink())
+                            <p class="mt-2 text-sm text-[#16a34a] font-medium">Sudah diterima oleh penyelenggara</p>
+                        @endif
+
                         @if ($u && count($u->keahlian) > 0)
                             <div class="mt-3 flex flex-wrap gap-1.5">
                                 @foreach ($u->keahlian as $k)
