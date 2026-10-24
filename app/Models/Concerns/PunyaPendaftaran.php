@@ -25,6 +25,12 @@ use Illuminate\Support\Facades\Storage;
  */
 trait PunyaPendaftaran
 {
+    protected static function bootPunyaPendaftaran(): void
+    {
+        static::deleting(function ($model) {
+            $model->hapusPendaftaranDanBimbingan();
+        });
+    }
     public const CARA_INTERNAL = 'internal';
     public const CARA_EKSTERNAL = 'eksternal';
 
