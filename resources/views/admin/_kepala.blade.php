@@ -1,7 +1,6 @@
 {{--
-    Kepala halaman admin: pita navy, judul, penjelasan, dan menu admin.
-    Parameter: judul, deskripsi (opsional), aktif (kunci menu; null = menu tidak ditampilkan),
-               kembali (opsional, [url, teks]), aksi (opsional, HTML tombol di kanan judul)
+    Kepala halaman admin: pita navy, judul, dan penjelasan. Menu ada di sidebar layouts.panel.
+    Parameter: judul, deskripsi (opsional), kembali (opsional, [url, teks]), aksi (opsional, HTML tombol di kanan judul)
 --}}
 <section class="relative isolate overflow-hidden bg-navy text-paper-white">
     <div class="hero-dots pointer-events-none absolute inset-0" aria-hidden="true"></div>
@@ -28,9 +27,5 @@
                 <div class="shrink-0">{!! $aksi !!}</div>
             @endif
         </div>
-
-        @if (! empty($aktif))
-            @include('admin._menu', ['aktif' => $aktif, 'gelap' => true])
-        @endif
     </div>
 </section>

@@ -14,6 +14,12 @@ class Tanggal
         return $tanggal ? $tanggal->copy()->locale('id')->translatedFormat('j F Y') : '-';
     }
 
+    /** Contoh: Oktober 2026. Dipakai untuk riwayat profil (sertifikasi, proyek, dan sebagainya). */
+    public static function bulanTahun(CarbonInterface $tanggal): string
+    {
+        return $tanggal->copy()->locale('id')->translatedFormat('F Y');
+    }
+
     /** Selisih hari dari hari ini ke batas. 0 = hari ini, negatif = sudah lewat. */
     public static function sisaHari(CarbonInterface $batas): int
     {

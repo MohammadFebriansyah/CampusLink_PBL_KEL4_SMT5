@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfilRequest;
 use App\Models\Keahlian;
+use App\Models\RiwayatProfil;
 use App\Models\User;
 use App\Support\Kampus;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class ProfilController extends Controller
             'peran' => $user->role,
             'semuaKeahlian' => Keahlian::orderBy('nama')->get(),
             'keahlianTerpilih' => $user->keahlian()->pluck('keahlian.id')->all(),
+            'riwayat' => $user->role === User::ROLE_MAHASISWA ? RiwayatProfil::kelompokkan($user->riwayat()->get()) : [],
         ]);
     }
 

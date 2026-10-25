@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
-@section('title', 'Dasbor admin')
+@section('title', 'Dashboard admin')
 
 @section('content')
     @php
@@ -35,7 +35,6 @@
             <p class="text-sm font-semibold text-accent">Panel admin · {{ \App\Support\Tanggal::panjang(today()) }}</p>
             <h1 class="mt-2 text-heading font-bold tracking-[-0.8px]">Halo, {{ auth()->user()->name }}</h1>
             <p class="mt-2 text-white/70">Ringkasan pengguna dan informasi CampusLink hari ini.</p>
-            @include('admin._menu', ['aktif' => 'dashboard', 'gelap' => true])
         </div>
     </section>
 

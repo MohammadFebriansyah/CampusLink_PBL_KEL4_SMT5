@@ -13,10 +13,8 @@
             ? ['Bersedia membimbing', $kesediaan !== '' ? $kesediaan : 'Belum ada keterangan', '<path d="m12 4 10 5-10 5L2 9l10-5Z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>']
             : ['Kelas dan angkatan', $profil->kelas . ', angkatan ' . $profil->angkatan, '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'];
         $info[] = ['Kontak', $profil->kontak ?: 'Belum mencantumkan kontak', '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>'];
-        $bagian = ['tentang' => 'Tentang'];
-        if (! $dosen) {
-            $bagian += ['sertifikasi' => 'Sertifikasi', 'pelatihan' => 'Pelatihan', 'proyek' => 'Proyek', 'pencapaian' => 'Pencapaian'];
-        }
+        // Sertifikasi, pelatihan, proyek, pencapaian: entri riwayat per jenis, terbaru dulu.
+        $riwayat = $dosen ? [] : \App\Models\RiwayatProfil::kelompokkan($user->riwayat);
     @endphp
 
     {{-- Kepala profil --}}
@@ -75,11 +73,25 @@
                     </div>
                 @endif
 
-                @foreach ($bagian as $kolom => $judul)
-                    @if ($profil->{$kolom})
+                @if ($profil->tentang)
+                    <div class="mt-8 border-t border-fog pt-6">
+                        <h2 class="text-subheading font-semibold">Tentang</h2>
+                        <p class="mt-2 whitespace-pre-line text-graphite">{{ $profil->tentang }}</p>
+                    </div>
+                @endif
+
+                @foreach ($riwayat as $jenis => $daftar)
+                    @if ($daftar->isNotEmpty())
                         <div class="mt-8 border-t border-fog pt-6">
-                            <h2 class="text-subheading font-semibold">{{ $judul }}</h2>
-                            <p class="mt-2 whitespace-pre-line text-graphite">{{ $profil->{$kolom} }}</p>
+                            <h2 class="text-subheading font-semibold">{{ \App\Models\RiwayatProfil::JENIS[$jenis]['nama'] }}</h2>
+                            <ul class="mt-3 space-y-5">
+                                @foreach ($daftar as $r)
+                                    <li class="flex gap-3">
+                                        <span class="mt-2 size-2 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                                        @include('profil._riwayat-item', ['r' => $r])
+                                    </li>
+                                @endforeach
+                            </ul>
                         </div>
                     @endif
                 @endforeach

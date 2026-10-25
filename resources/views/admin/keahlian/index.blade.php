@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Keahlian')
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Bidang keahlian', 'deskripsi' => 'Daftar yang bisa dipilih mahasiswa dan dosen di profil, dan dipakai sebagai filter direktori.', 'aktif' => 'keahlian'])
+    @include('admin._kepala', ['judul' => 'Bidang keahlian', 'deskripsi' => 'Daftar yang bisa dipilih mahasiswa dan dosen di profil, dan dipakai sebagai filter direktori.'])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-4xl">

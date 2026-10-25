@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Kelola ' . mb_strtolower($label))
 
@@ -6,7 +6,6 @@
     @include('admin._kepala', [
         'judul' => 'Informasi ' . mb_strtolower($label),
         'deskripsi' => 'Semua informasi ' . mb_strtolower($label) . ' dari mitra dan admin, termasuk yang ditutup dan disembunyikan.',
-        'aktif' => $kategori,
         'aksi' => '<a href="' . e(route('admin.informasi.create', $kategori)) . '" class="btn btn-primary px-6 py-3">+ Tambah ' . e(mb_strtolower($label)) . '</a>',
     ])
 

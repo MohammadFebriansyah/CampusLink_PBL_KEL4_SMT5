@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Ubah data ' . $user->name)
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Ubah data pengguna', 'deskripsi' => $user->name, 'kembali' => [route('admin.pengguna.show', $user->id), 'Kembali ke ' . $user->name], 'aktif' => null])
+    @include('admin._kepala', ['judul' => 'Ubah data pengguna', 'deskripsi' => $user->name, 'kembali' => [route('admin.pengguna.show', $user->id), 'Kembali ke ' . $user->name]])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-xl">

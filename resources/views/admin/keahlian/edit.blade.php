@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Ubah keahlian')
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Ubah keahlian', 'deskripsi' => $keahlian->nama, 'kembali' => [route('admin.keahlian.index'), 'Kembali ke daftar keahlian'], 'aktif' => null])
+    @include('admin._kepala', ['judul' => 'Ubah keahlian', 'deskripsi' => $keahlian->nama, 'kembali' => [route('admin.keahlian.index'), 'Kembali ke daftar keahlian']])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-xl">

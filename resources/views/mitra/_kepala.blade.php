@@ -1,18 +1,8 @@
 {{--
-    Kepala halaman mitra: pita navy, judul, dan menu mitra.
-    Parameter: judul, deskripsi (opsional), aktif (dashboard|pendaftar|magang|lomba|beasiswa|profil; null = tanpa menu),
-               kembali (opsional, [url, teks]), aksi (opsional, HTML tombol di kanan judul), atas (opsional, teks kecil di atas judul)
+    Kepala halaman mitra: pita navy dan judul. Menu ada di sidebar layouts.panel.
+    Parameter: judul, deskripsi (opsional), kembali (opsional, [url, teks]), aksi (opsional, HTML tombol di kanan judul),
+               atas (opsional, teks kecil di atas judul)
 --}}
-@php
-    $menu = [
-        'dashboard' => ['Dasbor', route('mitra.dashboard')],
-        'pendaftar' => ['Pendaftar', route('mitra.pendaftar.index')],
-        'magang' => ['Magang', route('mitra.informasi.index', 'magang')],
-        'lomba' => ['Lomba', route('mitra.informasi.index', 'lomba')],
-        'beasiswa' => ['Beasiswa', route('mitra.informasi.index', 'beasiswa')],
-        'profil' => ['Profil organisasi', route('mitra.profil.show')],
-    ];
-@endphp
 <section class="relative isolate overflow-hidden bg-navy text-paper-white">
     <div class="hero-dots pointer-events-none absolute inset-0" aria-hidden="true"></div>
     <div class="pointer-events-none absolute -top-32 right-[-5%] size-[420px] rounded-full bg-primary/50 blur-3xl" aria-hidden="true"></div>
@@ -38,17 +28,5 @@
                 <div class="shrink-0">{!! $aksi !!}</div>
             @endif
         </div>
-
-        @if (! empty($aktif))
-            <nav class="mt-6 -mx-1 overflow-x-auto px-1 pb-1" aria-label="Menu mitra">
-                <div class="inline-flex gap-1 rounded-full bg-white/10 p-1 ring-1 ring-white/15">
-                    @foreach ($menu as $kunci => [$nama, $url])
-                        <a href="{{ $url }}"
-                           class="shrink-0 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition {{ $aktif === $kunci ? 'bg-accent text-navy' : 'text-white/75 hover:bg-white/10 hover:text-paper-white' }}"
-                           @if ($aktif === $kunci) aria-current="page" @endif>{{ $nama }}</a>
-                    @endforeach
-                </div>
-            </nav>
-        @endif
     </div>
 </section>

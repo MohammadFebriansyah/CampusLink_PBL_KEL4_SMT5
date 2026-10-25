@@ -19,6 +19,7 @@ use App\Http\Controllers\MitraProfilController;
 use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\PeninjauanController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\RiwayatProfilController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
 
@@ -79,6 +80,11 @@ Route::middleware(['auth', EnsureRole::class . ':mahasiswa'])->group(function ()
     Route::post('/{kategori}/{id}/bimbingan', [BimbinganController::class, 'store'])
         ->where('kategori', 'magang|lomba')->whereNumber('id')->name('bimbingan.store');
     Route::delete('/bimbingan-saya/{id}', [BimbinganController::class, 'destroy'])->whereNumber('id')->name('bimbingan.destroy');
+
+    // Sertifikasi, pelatihan, proyek, pencapaian di profil. Kepemilikan diperiksa di controller (404 untuk milik orang lain).
+    Route::post('/profil/riwayat', [RiwayatProfilController::class, 'store'])->name('profil.riwayat.store');
+    Route::put('/profil/riwayat/{id}', [RiwayatProfilController::class, 'update'])->whereNumber('id')->name('profil.riwayat.update');
+    Route::delete('/profil/riwayat/{id}', [RiwayatProfilController::class, 'destroy'])->whereNumber('id')->name('profil.riwayat.destroy');
 });
 
 // Bukti diterima (kegiatan luar) untuk bimbingan: mahasiswa pengaju atau dosen yang dituju. Diperiksa di controller.

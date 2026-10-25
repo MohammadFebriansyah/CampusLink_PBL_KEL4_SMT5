@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Verifikasi mitra')
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Verifikasi mitra', 'deskripsi' => 'Mitra baru bisa masuk dan menayangkan informasi setelah disetujui.', 'aktif' => 'mitra'])
+    @include('admin._kepala', ['judul' => 'Verifikasi mitra', 'deskripsi' => 'Mitra baru bisa masuk dan menayangkan informasi setelah disetujui.'])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10">

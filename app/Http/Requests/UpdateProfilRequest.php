@@ -39,10 +39,8 @@ class UpdateProfilRequest extends FormRequest
         return $umum + [
             'kelas' => ['required', 'string', 'max:20'],
             'angkatan' => ['required', 'integer', 'between:2000,' . date('Y')],
-            'sertifikasi' => ['nullable', 'string', 'max:2000'],
-            'pelatihan' => ['nullable', 'string', 'max:2000'],
-            'proyek' => ['nullable', 'string', 'max:2000'],
-            'pencapaian' => ['nullable', 'string', 'max:2000'],
+            // Sertifikasi, pelatihan, proyek, pencapaian kini entri terpisah (RiwayatProfilController).
+            // Kolom teks lamanya tidak lagi diubah dari form ini.
         ];
     }
 

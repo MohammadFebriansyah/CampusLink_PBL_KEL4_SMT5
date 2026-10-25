@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Profil organisasi')
 
 @section('content')
-    @include('mitra._kepala', ['judul' => 'Profil organisasi', 'deskripsi' => 'Data ini tampil bersama informasi yang Anda tayangkan.', 'aktif' => 'profil'])
+    @include('mitra._kepala', ['judul' => 'Profil organisasi', 'deskripsi' => 'Data ini tampil bersama informasi yang Anda tayangkan.'])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-3xl">

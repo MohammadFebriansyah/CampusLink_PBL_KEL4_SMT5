@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', ($item ? 'Ubah ' : 'Tambah ') . mb_strtolower($label))
 
@@ -7,7 +7,6 @@
         'judul' => ($item ? 'Ubah' : 'Tambah') . ' informasi ' . mb_strtolower($label),
         'deskripsi' => $item?->judul,
         'kembali' => [route('admin.informasi.index', $kategori), 'Kembali ke daftar ' . mb_strtolower($label)],
-        'aktif' => null,
     ])
 
     <section class="bg-[#f7f8fc]">

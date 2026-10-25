@@ -48,5 +48,51 @@ Alpine.data('panelDetail', (awal) => ({
     },
 }));
 
+// TAMBAHAN: $fokus(elemen atau id) memindahkan fokus ke elemen yang baru ditampilkan x-show.
+// x-show menampilkan elemen lewat setTimeout setelah $nextTick, jadi fokus dijadwalkan sesudahnya.
+Alpine.magic('fokus', () => (target) => {
+    Alpine.nextTick(() => setTimeout(() => {
+        (typeof target === 'string' ? document.getElementById(target) : target)?.focus();
+    }));
+});
+
+// Form riwayat profil (sertifikasi, pelatihan, proyek, pencapaian): dikirim tanpa pindah halaman,
+// supaya isian lain di halaman profil yang belum disimpan tidak hilang.
+// Server membalas HTML bagian yang sudah diperbarui; galat validasi (422) ditampilkan di form.
+Alpine.data('riwayatForm', (galatAwal = {}) => ({
+    galat: galatAwal,
+    gagal: '',
+    mengirim: false,
+    async kirim(event) {
+        if (this.mengirim) return;
+        const form = event.target;
+        this.mengirim = true;
+        this.gagal = '';
+        try {
+            const respons = await fetch(form.action, {
+                method: 'POST', // _method (PUT/DELETE) ikut di FormData
+                body: new FormData(form),
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (respons.status === 422) {
+                this.galat = (await respons.json()).errors ?? {};
+                this.$nextTick(() => form.querySelector('[aria-invalid="true"]')?.focus());
+                return;
+            }
+            if (!respons.ok) throw new Error('gagal');
+            const { html } = await respons.json();
+            const bagian = form.closest('[data-riwayat]');
+            const id = bagian.id;
+            bagian.outerHTML = html;
+            // Fokus ke judul bagian agar pembaca layar mendengar pesan status yang baru.
+            document.getElementById(`${id}-judul`)?.focus();
+        } catch {
+            this.gagal = 'Gagal menyimpan. Periksa koneksi lalu coba lagi, atau muat ulang halaman.';
+        } finally {
+            this.mengirim = false;
+        }
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
