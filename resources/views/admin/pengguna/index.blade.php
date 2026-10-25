@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Pengguna')
 
@@ -6,7 +6,7 @@
     @php
         $warnaPeran = ['mahasiswa' => 'bg-primary-wash text-primary', 'dosen' => 'bg-accent-wash text-accent-dark', 'mitra' => 'bg-[#f3e8ff] text-[#7e22ce]', 'admin' => 'bg-mist text-graphite'];
     @endphp
-    @include('admin._kepala', ['judul' => 'Pengguna', 'deskripsi' => 'Cari akun, lihat detail, ubah identitas, atau nonaktifkan.', 'aktif' => 'pengguna'])
+    @include('admin._kepala', ['judul' => 'Pengguna', 'deskripsi' => 'Cari akun, lihat detail, ubah identitas, atau nonaktifkan.'])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10">

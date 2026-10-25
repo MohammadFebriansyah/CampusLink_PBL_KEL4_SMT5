@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Kelola ' . mb_strtolower($label))
 
@@ -6,7 +6,6 @@
     @include('mitra._kepala', [
         'judul' => 'Informasi ' . mb_strtolower($label) . ' saya',
         'deskripsi' => 'Semua informasi ' . mb_strtolower($label) . ' yang Anda tayangkan, termasuk yang sudah ditutup.',
-        'aktif' => $kategori,
         'aksi' => '<a href="' . e(route('mitra.informasi.create', $kategori)) . '" class="btn btn-primary px-6 py-3">+ Tambah ' . e(mb_strtolower($label)) . '</a>',
     ])
 

@@ -47,7 +47,7 @@ class DirektoriController extends Controller
         // Tanpa filter, tetapi dengan aturan keterlihatan yang sama. Hasilnya 404 untuk akun yang
         // tidak ada, nonaktif, bukan mahasiswa/dosen, atau profilnya disembunyikan (tidak membedakan alasan).
         $user = $this->kueri([])
-            ->with(['mahasiswa', 'dosen', 'keahlian'])
+            ->with(['mahasiswa', 'dosen', 'keahlian', 'riwayat']) // riwayat: satu query, berapa pun jumlah entrinya
             ->whereKey($id)
             ->firstOrFail();
 

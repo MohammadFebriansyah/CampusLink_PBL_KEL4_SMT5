@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Pendaftar')
 
@@ -16,7 +16,6 @@
             'deskripsi' => $panel === 'admin'
                 ? 'Mahasiswa yang mendaftar ke kegiatan kampus buatan admin. Tinjau profil dan CV, lalu terima atau tolak.'
                 : 'Mahasiswa yang mendaftar ke informasi Anda. Tinjau profil dan CV, lalu terima atau tolak.',
-            'aktif' => 'pendaftar',
         ];
     @endphp
 

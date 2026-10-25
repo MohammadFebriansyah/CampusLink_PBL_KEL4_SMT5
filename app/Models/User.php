@@ -99,6 +99,12 @@ class User extends Authenticatable
         return $this->hasOne(Mitra::class);
     }
 
+    /** Sertifikasi, pelatihan, proyek, dan pencapaian (khusus mahasiswa). */
+    public function riwayat(): HasMany
+    {
+        return $this->hasMany(RiwayatProfil::class);
+    }
+
     public function keahlian(): BelongsToMany
     {
         return $this->belongsToMany(Keahlian::class, 'pengguna_keahlian', 'user_id', 'keahlian_id');

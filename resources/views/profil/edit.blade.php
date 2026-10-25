@@ -49,8 +49,10 @@
     </section>
 
     <section class="bg-[#f7f8fc]">
-        <form method="POST" action="{{ route('profil.update') }}" enctype="multipart/form-data"
-              class="mx-auto max-w-4xl space-y-5 px-4 py-10 sm:px-6 md:py-12">
+        {{-- Form utama berakhir sebelum bagian Pengalaman, karena tiap entri pengalaman punya form sendiri
+             (form tidak boleh bersarang). Visibilitas dan tombol simpan memakai atribut form="form-profil". --}}
+        <div class="mx-auto max-w-4xl space-y-5 px-4 py-10 sm:px-6 md:py-12">
+        <form id="form-profil" method="POST" action="{{ route('profil.update') }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -173,18 +175,8 @@
                 @enderror
             </div>
 
-            {{-- Isian khusus peran --}}
-            @if (! $dosen)
-                <div class="space-y-5 rounded-3xl border border-fog bg-paper-white p-6 sm:p-7">
-                    {!! $kepala('pengalaman', 'Pengalaman', 'Opsional. Tulis satu hal per baris agar mudah dibaca.') !!}
-                    <div class="grid gap-5 sm:grid-cols-2">
-                        @include('partials.textarea', ['name' => 'sertifikasi', 'label' => 'Sertifikasi', 'nilai' => $profil->sertifikasi])
-                        @include('partials.textarea', ['name' => 'pelatihan', 'label' => 'Pelatihan', 'nilai' => $profil->pelatihan])
-                        @include('partials.textarea', ['name' => 'proyek', 'label' => 'Proyek', 'nilai' => $profil->proyek])
-                        @include('partials.textarea', ['name' => 'pencapaian', 'label' => 'Pencapaian', 'nilai' => $profil->pencapaian])
-                    </div>
-                </div>
-            @else
+            {{-- Isian khusus dosen --}}
+            @if ($dosen)
                 <div class="rounded-3xl border border-fog bg-paper-white p-6 sm:p-7">
                     {!! $kepala('bimbing', 'Kesediaan membimbing') !!}
                     <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -199,13 +191,24 @@
                     </div>
                 </div>
             @endif
+        </form>
 
-            {{-- Visibilitas --}}
+            {{-- Pengalaman (mahasiswa): sertifikasi, pelatihan, proyek, pencapaian. Tersimpan langsung per entri. --}}
+            @if (! $dosen)
+                <div class="rounded-3xl border border-primary/15 bg-primary-wash p-6 sm:p-7">
+                    {!! $kepala('pengalaman', 'Pengalaman', 'Opsional. Setiap entri tersimpan langsung saat Anda menekan Simpan di entri itu, terpisah dari tombol Simpan perubahan di bawah.') !!}
+                </div>
+                @foreach ($riwayat as $jenis => $daftar)
+                    @include('profil._riwayat-bagian', ['jenis' => $jenis, 'daftar' => $daftar])
+                @endforeach
+            @endif
+
+            {{-- Visibilitas (bagian dari form-profil) --}}
             <div class="rounded-3xl border border-fog bg-paper-white p-6 sm:p-7">
-                <input type="hidden" name="tampil_di_direktori" value="0">
+                <input type="hidden" name="tampil_di_direktori" value="0" form="form-profil">
                 <label class="flex cursor-pointer items-center justify-between gap-4">
                     {!! $kepala('tampil', 'Tampilkan profil saya di direktori', 'Jika dimatikan, profil Anda tidak muncul di pencarian direktori.') !!}
-                    <input type="checkbox" name="tampil_di_direktori" value="1" class="peer sr-only"
+                    <input type="checkbox" name="tampil_di_direktori" value="1" form="form-profil" class="peer sr-only"
                            @checked((bool) old('tampil_di_direktori', $profil->tampil_di_direktori))>
                     <span class="relative h-6 w-11 shrink-0 rounded-full bg-fog transition peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-carbon after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-paper-white after:shadow after:transition peer-checked:after:translate-x-5" aria-hidden="true"></span>
                 </label>
@@ -214,8 +217,8 @@
             {{-- Tombol simpan menempel di bawah layar --}}
             <div class="sticky bottom-4 z-20 flex items-center justify-between gap-4 rounded-2xl bg-navy px-5 py-3 text-paper-white shadow-[0_16px_40px_-12px_rgb(5_12_35/0.6)]">
                 <p class="hidden text-sm text-white/70 sm:block">Jangan lupa simpan setelah mengubah data.</p>
-                <button type="submit" class="btn btn-primary shrink-0 px-8 py-3">Simpan perubahan</button>
+                <button type="submit" form="form-profil" class="btn btn-primary shrink-0 px-8 py-3">Simpan perubahan</button>
             </div>
-        </form>
+        </div>
     </section>
 @endsection

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', $user->name)
 
@@ -23,7 +23,7 @@
             $baris[] = ['Situs web', $user->mitra->website ?: '-'];
         }
     @endphp
-    @include('admin._kepala', ['judul' => $user->name, 'kembali' => [route('admin.pengguna.index'), 'Semua pengguna'], 'aktif' => null])
+    @include('admin._kepala', ['judul' => $user->name, 'kembali' => [route('admin.pengguna.index'), 'Semua pengguna']])
 
     <section class="bg-[#f7f8fc]">
         <div class="mx-auto grid max-w-page gap-6 px-4 py-8 sm:px-6 md:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">

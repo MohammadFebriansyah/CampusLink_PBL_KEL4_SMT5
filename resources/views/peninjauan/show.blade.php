@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
 @section('title', 'Pendaftar ' . $p->user->name)
 
@@ -26,7 +26,6 @@
         'judul' => $p->user->name,
         'deskripsi' => $label . ': ' . ($info?->judul ?? 'Informasi sudah dihapus'),
         'kembali' => [route($rute . '.index', ['status' => $p->status]), 'Kembali ke daftar pendaftar'],
-        'aktif' => null,
     ])
 
     <section class="bg-[#f7f8fc]">
@@ -64,12 +63,24 @@
                     </div>
                 @endif
 
+                @if ($mhs?->tentang)
+                    <div class="rounded-2xl border border-fog bg-paper-white p-5 sm:p-6">
+                        <h2 class="font-semibold">Tentang</h2>
+                        <p class="mt-2 whitespace-pre-line text-graphite">{{ $mhs->tentang }}</p>
+                    </div>
+                @endif
+
+                {{-- TAMBAHAN: riwayat terstruktur menggantikan kolom teks lama, agar peninjau melihat data terbaru. --}}
                 @if ($mhs)
-                    @foreach (['tentang' => 'Tentang', 'pengalaman' => null, 'sertifikasi' => 'Sertifikasi', 'pelatihan' => 'Pelatihan', 'proyek' => 'Proyek', 'pencapaian' => 'Pencapaian'] as $kolom => $judul)
-                        @if ($judul && $mhs->{$kolom})
+                    @foreach (\App\Models\RiwayatProfil::kelompokkan($p->user->riwayat) as $jenis => $daftar)
+                        @if ($daftar->isNotEmpty())
                             <div class="rounded-2xl border border-fog bg-paper-white p-5 sm:p-6">
-                                <h2 class="font-semibold">{{ $judul }}</h2>
-                                <p class="mt-2 whitespace-pre-line text-graphite">{{ $mhs->{$kolom} }}</p>
+                                <h2 class="font-semibold">{{ \App\Models\RiwayatProfil::JENIS[$jenis]['nama'] }}</h2>
+                                <ul class="mt-3 space-y-4">
+                                    @foreach ($daftar as $r)
+                                        <li>@include('profil._riwayat-item', ['r' => $r])</li>
+                                    @endforeach
+                                </ul>
                             </div>
                         @endif
                     @endforeach

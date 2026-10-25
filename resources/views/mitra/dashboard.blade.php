@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.panel')
 
-@section('title', 'Dasbor mitra')
+@section('title', 'Dashboard mitra')
 
 @section('content')
     @php
@@ -23,9 +23,8 @@
 
     @include('mitra._kepala', [
         'atas' => 'Panel mitra · ' . \App\Support\Tanggal::panjang(today()),
-        'judul' => 'Dasbor ' . $mitra->nama_organisasi,
+        'judul' => 'Dashboard ' . $mitra->nama_organisasi,
         'deskripsi' => 'Kelola informasi yang Anda tayangkan untuk mahasiswa dan dosen Polinema.',
-        'aktif' => 'dashboard',
     ])
 
     <section class="bg-[#f7f8fc]">

@@ -1,4 +1,19 @@
 {{-- Header menempel di atas saat halaman di-scroll; bayangan muncul setelah mulai scroll. --}}
+@php
+    // Deret utama paling banyak 5 item: Beranda, Papan Informasi, Direktori, Kegiatan saya, menu akun.
+    $kelasNav = fn (bool $aktif) => 'rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors '
+        . ($aktif ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon');
+    $kelasItem = fn (bool $aktif, string $ukuran = 'text-sm') => "flex items-center justify-between gap-3 rounded-input px-3 py-2 {$ukuran} font-medium transition-colors "
+        . ($aktif ? 'bg-primary/10 text-primary' : 'text-carbon hover:bg-mist');
+    $papan = [
+        ['magang.index', 'magang.*', 'Magang'],
+        ['lomba.index', 'lomba.*', 'Lomba'],
+        ['beasiswa.index', 'beasiswa.*', 'Beasiswa'],
+    ];
+    $papanAktif = request()->routeIs('magang.*', 'lomba.*', 'beasiswa.*');
+    $saya = auth()->user();
+    $bolehDirektori = ! $saya || in_array($saya->role, ['mahasiswa', 'dosen'], true);
+@endphp
 <header x-data="{ scrolled: window.scrollY > 8 }" @scroll.window.passive="scrolled = window.scrollY > 8"
         :class="scrolled ? 'shadow-[0_6px_24px_-12px_rgb(15_30_80/0.25)]' : ''"
         class="sticky top-0 z-50 border-b border-fog bg-paper-white/90 backdrop-blur-md transition-shadow">
@@ -12,30 +27,41 @@
             </a>
 
             <ul class="hidden items-center gap-1 md:flex">
-                <li><a href="{{ route('home') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('home') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Beranda</a></li>
-                <li><a href="{{ route('magang.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('magang.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Magang</a></li>
-                <li><a href="{{ route('lomba.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('lomba.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Lomba</a></li>
-                <li><a href="{{ route('beasiswa.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('beasiswa.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Beasiswa</a></li>
-                @if (! auth()->check() || in_array(auth()->user()->role, ['mahasiswa', 'dosen'], true))
-                <li><a href="{{ route('direktori.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('direktori.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Direktori</a></li>
+                <li><a href="{{ route('home') }}" class="{{ $kelasNav(request()->routeIs('home')) }}" @if (request()->routeIs('home')) aria-current="page" @endif>Beranda</a></li>
+
+                {{-- Papan Informasi: dropdown berbasis klik. Tutup dengan klik di luar atau Esc. --}}
+                <li class="relative" x-data="{ buka: false }" @click.outside="buka = false"
+                    @keydown.escape.window="if (buka) { buka = false; $refs.tombol.focus() }">
+                    <button type="button" x-ref="tombol" @click="buka = !buka"
+                            aria-haspopup="true" :aria-expanded="buka.toString()" aria-expanded="false" aria-controls="menu-papan"
+                            class="inline-flex items-center gap-1 {{ $kelasNav($papanAktif) }}">
+                        Papan Informasi
+                        <svg class="size-4 transition-transform" :class="buka && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div id="menu-papan" x-cloak x-show="buka" x-transition.origin.top.left
+                         class="absolute left-0 top-full mt-2 w-52 rounded-card border border-fog bg-paper-white p-1.5 shadow-subtle-3">
+                        @foreach ($papan as [$rute, $pola, $nama])
+                            @php $aktif = request()->routeIs($pola); @endphp
+                            <a href="{{ route($rute) }}" class="{{ $kelasItem($aktif) }}" @if ($aktif) aria-current="page" @endif>
+                                {{ $nama }}
+                                @if ($aktif)<span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>@endif
+                            </a>
+                        @endforeach
+                    </div>
+                </li>
+
+                @if ($bolehDirektori)
+                    <li><a href="{{ route('direktori.index') }}" class="{{ $kelasNav(request()->routeIs('direktori.*')) }}" @if (request()->routeIs('direktori.*')) aria-current="page" @endif>Direktori</a></li>
                 @endif
-                @auth
-                    @if (auth()->user()->role === 'mahasiswa')
-                        <li><a href="{{ route('kegiatan.index') }}" class="rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('kegiatan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Kegiatan saya</a></li>
-                    @elseif (auth()->user()->role === 'dosen')
-                        @php $permintaanBimbingan = auth()->user()->bimbinganMasuk()->where('status', 'menunggu')->count(); @endphp
-                        <li><a href="{{ route('bimbingan.index') }}" class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium tracking-[-0.32px] transition-colors {{ request()->routeIs('bimbingan.*') ? 'bg-primary/10 text-primary' : 'text-graphite hover:bg-mist hover:text-carbon' }}">Bimbingan @if ($permintaanBimbingan > 0)<span class="rounded-full bg-accent px-1.5 text-[11px] font-bold text-navy">{{ $permintaanBimbingan }}</span>@endif</a></li>
-                    @endif
-                @endauth
+                @if ($saya?->role === 'mahasiswa')
+                    <li><a href="{{ route('kegiatan.index') }}" class="{{ $kelasNav(request()->routeIs('kegiatan.*')) }}" @if (request()->routeIs('kegiatan.*')) aria-current="page" @endif>Kegiatan saya</a></li>
+                @endif
             </ul>
 
             <div class="flex items-center gap-1">
                 @auth
                     @php
-                        $panel = auth()->user()->panel();
-                    @endphp
-                    @php
-                        $saya = auth()->user();
+                        $panel = $saya->panel();
                         // Query langsung (bukan relasi $saya->mahasiswa) supaya selalu tepat satu query per halaman,
                         // tidak bergantung pada cache relasi di objek pengguna.
                         $profilSaya = match ($saya->role) {
@@ -43,30 +69,70 @@
                             'dosen' => \App\Models\Dosen::where('user_id', $saya->id)->first(),
                             default => null,
                         };
+                        $permintaanBimbingan = $saya->role === 'dosen'
+                            ? $saya->bimbinganMasuk()->where('status', 'menunggu')->count()
+                            : 0;
+                        $akunAktif = request()->routeIs('profil.*', 'bimbingan.*', 'mitra.profil.*');
                     @endphp
-                    @if ($profilSaya)
-                        {{-- Lingkaran foto profil (inisial bila belum ada foto). Di HP tampil tanpa tulisan. --}}
-                        <a href="{{ route($panel['rute']) }}" title="Profil saya"
-                           class="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 text-sm font-medium tracking-[-0.32px] transition hover:bg-mist sm:pr-3 {{ request()->routeIs('profil.*') ? 'bg-primary/10 text-primary' : '' }}">
-                            @include('direktori._avatar', ['profil' => $profilSaya, 'nama' => $saya->name, 'ukuran' => 'size-8', 'teks' => 'text-[11px]', 'cincin' => 'ring-2 ring-accent/60', 'alt' => 'Foto profil ' . $saya->name])
-                            <span class="hidden sm:inline">{{ $panel['label'] }}</span>
-                        </a>
-                    @else
-                        <a href="{{ route($panel['rute']) }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">{{ $panel['label'] }}</a>
-                    @endif
-                    @if (auth()->user()->role === 'mitra')
-                        <a href="{{ route('mitra.profil.show') }}" class="hidden px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline sm:inline-block">Profil</a>
-                    @endif
-                    <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
-                        @csrf
-                        <button type="submit" class="px-3 py-1.5 text-sm font-medium tracking-[-0.32px] hover:underline">Keluar</button>
-                    </form>
+
+                    {{-- Menu akun: Profil, Bimbingan (dosen), Keluar. Dipakai di semua lebar layar. --}}
+                    <div class="relative" x-data="{ buka: false }" @click.outside="buka = false"
+                         @keydown.escape.window="if (buka) { buka = false; $refs.tombol.focus() }">
+                        <button type="button" x-ref="tombol" @click="buka = !buka"
+                                aria-haspopup="true" :aria-expanded="buka.toString()" aria-expanded="false" aria-controls="menu-akun"
+                                aria-label="Menu akun {{ $saya->name }}"
+                                class="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 text-sm font-medium tracking-[-0.32px] transition hover:bg-mist sm:pr-3 {{ $akunAktif ? 'bg-primary/10 text-primary' : '' }}">
+                            <span class="relative">
+                                @if ($profilSaya)
+                                    @include('direktori._avatar', ['profil' => $profilSaya, 'nama' => $saya->name, 'ukuran' => 'size-8', 'teks' => 'text-[11px]', 'cincin' => 'ring-2 ring-accent/60', 'alt' => ''])
+                                @else
+                                    <span class="flex size-8 items-center justify-center rounded-full bg-linear-to-br from-navy to-navy-2 text-[11px] font-bold text-accent ring-2 ring-accent/60" aria-hidden="true">{{ mb_strtoupper(mb_substr($saya->name, 0, 1)) }}</span>
+                                @endif
+                                {{-- TAMBAHAN: titik penanda di avatar bila ada permintaan bimbingan menunggu (lencana pindah ke dalam menu). --}}
+                                @if ($permintaanBimbingan > 0)
+                                    <span class="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-accent ring-2 ring-paper-white" aria-hidden="true"></span>
+                                @endif
+                            </span>
+                            <span class="hidden max-w-[10rem] truncate sm:inline" title="{{ $saya->name }}">{{ $saya->name }}</span>
+                            <svg class="hidden size-4 shrink-0 transition-transform sm:block" :class="buka && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div id="menu-akun" x-cloak x-show="buka" x-transition.origin.top.right
+                             class="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-card border border-fog bg-paper-white p-1.5 shadow-subtle-3">
+                            <div class="px-3 pt-1.5 pb-2">
+                                {{-- Nama lengkap di sini karena di tombol bisa terpotong elipsis. --}}
+                                <p class="text-sm font-semibold break-words text-carbon">{{ $saya->name }}</p>
+                                <p class="text-caption break-all text-graphite">{{ $saya->email }}</p>
+                            </div>
+                            @if ($saya->role === 'mitra' || $saya->role === 'admin')
+                                {{-- Mitra dan admin: tautan ke dasbor panel masing-masing. --}}
+                                <a href="{{ route($panel['rute']) }}" class="{{ $kelasItem(request()->routeIs($panel['rute'])) }}" @if (request()->routeIs($panel['rute'])) aria-current="page" @endif>{{ $panel['label'] }}</a>
+                            @endif
+                            @if ($saya->role === 'mitra')
+                                <a href="{{ route('mitra.profil.show') }}" class="{{ $kelasItem(request()->routeIs('mitra.profil.*')) }}" @if (request()->routeIs('mitra.profil.*')) aria-current="page" @endif>Profil</a>
+                            @elseif ($saya->role !== 'admin')
+                                <a href="{{ route('profil.show') }}" class="{{ $kelasItem(request()->routeIs('profil.*')) }}" @if (request()->routeIs('profil.*')) aria-current="page" @endif>Profil</a>
+                            @endif
+                            @if ($saya->role === 'dosen')
+                                <a href="{{ route('bimbingan.index') }}" class="{{ $kelasItem(request()->routeIs('bimbingan.*')) }}" @if (request()->routeIs('bimbingan.*')) aria-current="page" @endif>
+                                    Bimbingan
+                                    @if ($permintaanBimbingan > 0)
+                                        <span class="rounded-full bg-accent px-1.5 text-[11px] font-bold text-navy">{{ $permintaanBimbingan }}<span class="sr-only"> permintaan menunggu</span></span>
+                                    @endif
+                                </a>
+                            @endif
+                            <div class="my-1 border-t border-fog"></div>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="{{ $kelasItem(false) }} w-full text-left">Keluar</button>
+                            </form>
+                        </div>
+                    </div>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-outline hidden sm:inline-flex">Masuk</a>
                     <a href="{{ route('register') }}" class="btn btn-register">Daftar</a>
                 @endauth
                 <button type="button" class="ml-1 inline-flex size-10 items-center justify-center rounded-full hover:bg-mist md:hidden"
-                        @click="open = !open" :aria-expanded="open" aria-label="Buka menu">
+                        @click="open = !open" :aria-expanded="open.toString()" aria-expanded="false" aria-controls="menu-ponsel" aria-label="Buka menu">
                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                         <path d="M4 7h16M4 12h16M4 17h16"/>
                     </svg>
@@ -74,33 +140,34 @@
             </div>
         </div>
 
-        <div x-cloak x-show="open" x-transition.origin.top @click.outside="open = false" class="mb-3 rounded-card border border-fog bg-paper-white p-2 shadow-subtle-3 md:hidden">
-            <a href="{{ route('home') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Beranda</a>
-            <a href="{{ route('magang.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Magang</a>
-            <a href="{{ route('lomba.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Lomba</a>
-            <a href="{{ route('beasiswa.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Beasiswa</a>
-            @if (! auth()->check() || in_array(auth()->user()->role, ['mahasiswa', 'dosen'], true))
-            <a href="{{ route('direktori.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Direktori</a>
+        {{-- Menu layar sempit. Papan Informasi menjadi akordeon (terbuka otomatis bila salah satu halamannya aktif). --}}
+        <div id="menu-ponsel" x-cloak x-show="open" x-transition.origin.top @click.outside="open = false" class="mb-3 rounded-card border border-fog bg-paper-white p-2 shadow-subtle-3 md:hidden">
+            <a href="{{ route('home') }}" class="{{ $kelasItem(request()->routeIs('home'), 'text-body') }}" @if (request()->routeIs('home')) aria-current="page" @endif>Beranda</a>
+            <div x-data="{ buka: @js($papanAktif) }">
+                <button type="button" @click="buka = !buka" :aria-expanded="buka.toString()" aria-expanded="{{ $papanAktif ? 'true' : 'false' }}" aria-controls="akordeon-papan"
+                        class="{{ $kelasItem($papanAktif, 'text-body') }} w-full text-left">
+                    Papan Informasi
+                    <svg class="size-4 transition-transform" :class="buka && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="akordeon-papan" x-show="buka" @unless ($papanAktif) x-cloak @endunless x-transition.opacity class="ml-3 border-l border-fog pl-2">
+                    @foreach ($papan as [$rute, $pola, $nama])
+                        @php $aktif = request()->routeIs($pola); @endphp
+                        <a href="{{ route($rute) }}" class="{{ $kelasItem($aktif) }}" @if ($aktif) aria-current="page" @endif>
+                            {{ $nama }}
+                            @if ($aktif)<span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>@endif
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+            @if ($bolehDirektori)
+                <a href="{{ route('direktori.index') }}" class="{{ $kelasItem(request()->routeIs('direktori.*'), 'text-body') }}" @if (request()->routeIs('direktori.*')) aria-current="page" @endif>Direktori</a>
             @endif
-            @auth
-                @if (auth()->user()->role === 'mahasiswa')
-                    <a href="{{ route('kegiatan.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Kegiatan saya</a>
-                @elseif (auth()->user()->role === 'dosen')
-                    <a href="{{ route('bimbingan.index') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Bimbingan</a>
-                @endif
-            @endauth
-            @auth
-                <a href="{{ route($panel['rute']) }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">{{ $panel['label'] }}</a>
-                @if (auth()->user()->role === 'mitra')
-                    <a href="{{ route('mitra.profil.show') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Profil</a>
-                @endif
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="block w-full rounded-input px-3 py-2 text-left font-medium hover:bg-mist">Keluar</button>
-                </form>
-            @else
-                <a href="{{ route('login') }}" class="block rounded-input px-3 py-2 font-medium hover:bg-mist">Masuk</a>
-            @endauth
+            @if ($saya?->role === 'mahasiswa')
+                <a href="{{ route('kegiatan.index') }}" class="{{ $kelasItem(request()->routeIs('kegiatan.*'), 'text-body') }}" @if (request()->routeIs('kegiatan.*')) aria-current="page" @endif>Kegiatan saya</a>
+            @endif
+            @guest
+                <a href="{{ route('login') }}" class="{{ $kelasItem(false, 'text-body') }} sm:hidden">Masuk</a>
+            @endguest
         </div>
     </nav>
 </header>

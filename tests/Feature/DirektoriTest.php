@@ -325,8 +325,11 @@ class DirektoriTest extends TestCase
     {
         $mhs = $this->buatMahasiswa(['name' => 'Alya Putri', 'email' => 'alya.rahasia@polinema.ac.id'], [
             'nim' => '2441079001', 'kontak' => '081200000001', 'tentang' => 'Suka data.',
-            'proyek' => 'Sistem inventaris kampus.', 'pencapaian' => 'Juara 2 lomba basis data.',
         ], ['Basis Data']);
+        // Proyek dan pencapaian kini entri riwayat_profil, bukan kolom teks di tabel mahasiswa.
+        foreach (['proyek' => 'Sistem inventaris kampus.', 'pencapaian' => 'Juara 2 lomba basis data.'] as $jenis => $judul) {
+            $mhs->riwayat()->make(['judul' => $judul])->forceFill(['jenis' => $jenis])->save();
+        }
 
         $this->actingAs($this->pembaca)->get(route('direktori.show', $mhs->id))
             ->assertOk()

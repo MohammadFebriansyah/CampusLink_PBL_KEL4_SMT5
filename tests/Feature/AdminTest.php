@@ -241,9 +241,12 @@ class AdminTest extends TestCase
         $this->buatDosen(['name' => 'Dewi Dosen']);
         $this->buatMitra(Mitra::STATUS_DISETUJUI, ['name' => 'Mitra Budi']);
 
-        $this->sebagaiAdmin()->get(route('admin.pengguna.index'))
+        $respons = $this->sebagaiAdmin()->get(route('admin.pengguna.index'))
             ->assertOk()->assertSee('Alya Putri')->assertSee('Dewi Dosen')->assertSee('Mitra Budi')
-            ->assertDontSee('Admin Uji')->assertSee('4 pengguna');
+            ->assertSee('4 pengguna');
+        // Nama admin tampil di header (menu akun), jadi pemeriksaan "admin tidak ikut terdaftar" dibatasi ke isi <main>.
+        preg_match('/<main\b.*<\/main>/s', $respons->getContent(), $isi);
+        $this->assertStringNotContainsString('Admin Uji', $isi[0] ?? '');
 
         $this->sebagaiAdmin()->get(route('admin.pengguna.index', ['peran' => 'dosen']))
             ->assertSee('Dewi Dosen')->assertDontSee('Alya Putri');

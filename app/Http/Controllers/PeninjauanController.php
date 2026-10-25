@@ -47,7 +47,7 @@ class PeninjauanController extends Controller
     public function show(Request $request, string $id): View
     {
         $pendaftaran = $this->cari($request, $id);
-        $pendaftaran->load(['user.mahasiswa', 'user.keahlian', 'informasi', 'peninjau']);
+        $pendaftaran->load(['user.mahasiswa', 'user.keahlian', 'user.riwayat', 'informasi', 'peninjau']);
 
         return view('peninjauan.show', [
             'panel' => $this->panel($request),
