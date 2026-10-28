@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AdminCariRequest;
 use App\Http\Requests\UbahPenggunaRequest;
+use App\Http\Resources\PenggunaResource;
 use App\Models\User;
+use App\Support\Daftar;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -16,24 +21,34 @@ use Illuminate\View\View;
  */
 class AdminPenggunaController extends Controller
 {
-    public function index(AdminCariRequest $request): View
+    public function index(AdminCariRequest $request): JsonResponse|Response
     {
         $f = $request->validated();
 
-        $pengguna = User::query()
+        $query = User::query()
             ->where('role', '!=', User::ROLE_ADMIN)
             ->when($f['peran'] ?? null, fn ($q, $v) => $q->where('role', $v))
             ->when($f['akun'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(
                 fn ($q) => $q->whereLike('name', "%{$v}%")->orWhereLike('email', "%{$v}%")
             ))
-            ->with(['mahasiswa', 'dosen', 'mitra'])   // eager loading, tanpa N+1
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->with(['mahasiswa', 'dosen', 'mitra']);   // eager loading, tanpa N+1
 
-        return view('admin.pengguna.index', ['pengguna' => $pengguna, 'filter' => $f]);
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'nama' => 'name',
+            'email' => 'email',
+            'peran' => 'role',
+            'status' => 'status',
+            'terdaftar' => 'created_at',
+        ], ['nama', 'asc']);
+
+        return Daftar::tanggapi(
+            $request,
+            PenggunaResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'admin.pengguna.index',
+            ['q' => $f['q'] ?? '', 'peran' => $f['peran'] ?? '', 'akun' => $f['akun'] ?? ''] + $urutan + ['per_halaman' => $perHalaman],
+        );
     }
 
     public function show(string $id): View

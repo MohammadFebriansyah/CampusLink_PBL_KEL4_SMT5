@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CariDirektoriRequest;
+use App\Http\Resources\ProfilDirektoriResource;
 use App\Models\Keahlian;
 use App\Models\Mahasiswa;
 use App\Models\User;
+use App\Support\Daftar;
 use App\Support\Kampus;
+use App\Support\Urutan;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
@@ -17,29 +22,42 @@ use Illuminate\View\View;
  */
 class DirektoriController extends Controller
 {
-    public function index(CariDirektoriRequest $request): View
+    public function index(CariDirektoriRequest $request): JsonResponse|Response
     {
         $filter = $request->validated();
 
-        $profil = $this->kueri($filter)
-            ->with(['mahasiswa', 'dosen', 'keahlian']) // eager loading: jumlah query tidak naik dengan jumlah baris
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(12)
-            ->withQueryString();
+        $query = $this->kueri($filter)
+            ->with(['mahasiswa', 'dosen', 'keahlian']); // eager loading: jumlah query tidak naik dengan jumlah baris
 
-        $terlihat = fn () => Mahasiswa::where('tampil_di_direktori', true)->where('disembunyikan_admin', false);
+        $perHalaman = Daftar::perHalaman($filter['per_halaman'] ?? null, 12);
+        $urutan = Urutan::terapkan($query, $filter['urut'] ?? null, $filter['arah'] ?? null, [
+            'nama' => 'name',
+        ], ['nama', 'asc']);
 
-        return view('direktori.index', [
-            'profil' => $profil,
-            'filter' => $filter,
-            'adaFilter' => collect($filter)->filter(fn ($v) => $v !== null && $v !== '')->isNotEmpty(),
-            'daftarKeahlian' => Keahlian::orderBy('nama')->get(['id', 'nama']),
-            'daftarJurusan' => array_keys(Kampus::jurusan()),
-            'daftarProdi' => Kampus::jurusan(),
-            'daftarKelas' => $terlihat()->distinct()->orderBy('kelas')->pluck('kelas'),
-            'daftarAngkatan' => $terlihat()->distinct()->orderByDesc('angkatan')->pluck('angkatan'),
-        ]);
+        $kunci = ['q', 'jenis', 'keahlian', 'jurusan', 'program_studi', 'kelas', 'angkatan'];
+        $state = collect($kunci)->mapWithKeys(fn ($k) => [$k => (string) ($filter[$k] ?? '')])->all() + $urutan + ['per_halaman' => $perHalaman];
+
+        // Pilihan filter hanya dibutuhkan saat halaman pertama kali dibuka.
+        $dataView = [];
+        if (! $request->wantsJson()) {
+            $terlihat = fn () => Mahasiswa::where('tampil_di_direktori', true)->where('disembunyikan_admin', false);
+            $dataView = [
+                'filter' => $filter,
+                'daftarKeahlian' => Keahlian::orderBy('nama')->get(['id', 'nama']),
+                'daftarJurusan' => array_keys(Kampus::jurusan()),
+                'daftarProdi' => Kampus::jurusan(),
+                'daftarKelas' => $terlihat()->distinct()->orderBy('kelas')->pluck('kelas'),
+                'daftarAngkatan' => $terlihat()->distinct()->orderByDesc('angkatan')->pluck('angkatan'),
+            ];
+        }
+
+        return Daftar::tanggapi(
+            $request,
+            ProfilDirektoriResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'direktori.index',
+            $state,
+            dataView: $dataView,
+        );
     }
 
     public function show(string $id): View

@@ -4,11 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AdminCariRequest;
 use App\Http\Requests\AdminSimpanInformasiRequest;
+use App\Http\Requests\CariInformasiRequest;
 use App\Http\Requests\SimpanInformasiRequest;
+use App\Http\Resources\InformasiAdminResource;
 use App\Models\Beasiswa;
 use App\Models\Lomba;
 use App\Models\Magang;
+use App\Support\Daftar;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -17,35 +23,39 @@ class AdminInformasiController extends Controller
 {
     private const LABEL = ['magang' => 'Magang', 'lomba' => 'Lomba', 'beasiswa' => 'Beasiswa'];
 
-    public function index(AdminCariRequest $request, string $kategori): View
+    public function index(AdminCariRequest $request, string $kategori): JsonResponse|Response
     {
         $model = $this->model($kategori);
         $f = $request->validated();
         $hariIni = today()->toDateString();
 
-        $items = $model::query()
+        $query = $model::query()
             ->with('user:id,name,role')   // nama pembuat, tanpa N+1
             ->withCount('pendaftaran')
-            ->when($f['q'] ?? null, fn($q, $v) => $q->where(
-                fn($q) => $q->whereLike('judul', "%{$v}%")->orWhereLike('penyelenggara', "%{$v}%")
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->where(
+                fn ($q) => $q->whereLike('judul', "%{$v}%")->orWhereLike('penyelenggara', "%{$v}%")
             ))
-            ->when($f['tayang'] ?? null, fn($q, $v) => match ($v) {
+            ->when($f['tayang'] ?? null, fn ($q, $v) => match ($v) {
                 'disembunyikan' => $q->where('status', $model::STATUS_DISEMBUNYIKAN),
                 'dibuka' => $q->where('status', $model::STATUS_TAYANG)->where('batas_pendaftaran', '>=', $hariIni),
                 'ditutup' => $q->where('status', $model::STATUS_TAYANG)->where('batas_pendaftaran', '<', $hariIni),
-            })
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            });
 
-        return view('admin.informasi.index', [
-            'kategori' => $kategori,
-            'label' => self::LABEL[$kategori],
-            'daftarKategori' => self::LABEL,
-            'items' => $items,
-            'filter' => $f,
-        ]);
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'judul' => 'judul',
+            'batas' => 'batas_pendaftaran',
+            'pendaftar' => 'pendaftaran_count',
+            'dibuat' => 'created_at',
+        ], ['dibuat', 'desc']);
+
+        return Daftar::tanggapi(
+            $request,
+            InformasiAdminResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'admin.informasi.index',
+            ['q' => $f['q'] ?? '', 'tayang' => $f['tayang'] ?? ''] + $urutan + ['per_halaman' => $perHalaman],
+            dataView: ['kategori' => $kategori, 'label' => self::LABEL[$kategori]],
+        );
     }
 
     public function create(string $kategori): View
@@ -124,7 +134,7 @@ class AdminInformasiController extends Controller
             'kategori' => $kategori,
             'label' => self::LABEL[$kategori],
             'item' => $item,
-            'daftarTingkat' => \App\Http\Requests\CariInformasiRequest::TINGKAT_LOMBA,
+            'daftarTingkat' => CariInformasiRequest::TINGKAT_LOMBA,
         ];
     }
 }

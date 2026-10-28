@@ -155,7 +155,7 @@
                                     <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                                     </svg>
-                                    <select id="industry_category" class="select-control">
+                                    <select id="industry_category" class="select-control" x-data x-combobox>
                                         <option value="" disabled selected>Pilih Bidang Industri</option>
                                         <option value="it_software">Teknologi Informasi & Perangkat Lunak</option>
                                         <option value="telecommunications">Telekomunikasi & Jaringan</option>
@@ -168,9 +168,6 @@
                                         <option value="logistics">Logistik & Transportasi</option>
                                         <option value="other">Lainnya</option>
                                     </select>
-                                    <svg class="select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
                                 </div>
                             </div>
 

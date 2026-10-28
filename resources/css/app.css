@@ -4,6 +4,19 @@
 @source '../views/**/*.blade.php';
 @source '../js/**/*.js';
 
+/* Mode gelap memakai kelas .dark di <html>. Hanya layout admin yang memasangnya,
+   jadi varian dark: di partial bersama tidak berpengaruh pada halaman publik dan mitra. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Sidebar admin yang diciutkan menjadi deret ikon, hanya di layar lebar (data-sidebar="tutup" di <html>). */
+@custom-variant ciut {
+    @media (width >= 64rem) {
+        &:where([data-sidebar=tutup] *) {
+            @slot;
+        }
+    }
+}
+
 /* ------------------------------------------------------------------
    Token desain CampusLink (referensi: DESIGN.md "Visitors")
    Font: OpenRunde berlisensi, jadi diganti Inter sesuai saran DESIGN.md.
@@ -78,6 +91,69 @@
     --container-page: 1200px;
 }
 
+/* ------------------------------------------------------------------
+   Token tema panel admin. Nilainya berganti lewat kelas .dark, sehingga
+   halaman cukup memakai bg-background, bg-card, text-muted-foreground,
+   border-border, dan seterusnya tanpa menulis dua warna di tiap elemen.
+------------------------------------------------------------------- */
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+}
+
+@layer base {
+    :root {
+        --background: #f6f7fb;
+        --foreground: #0f172a;
+        --card: #ffffff;
+        --muted: #f1f5f9;
+        --muted-foreground: #5b6b82;
+        --border: #e2e8f0;
+        --input: #cbd5e1;
+        --ring: #1e40af;
+        --brand: #0f1e3d;
+        --brand-foreground: #ffffff;
+        --sidebar: #fbfcfe;
+        --sidebar-accent: #eef1f6;
+        --chart-1: #2563eb;
+        --chart-2: #ea580c;
+    }
+
+    .dark {
+        color-scheme: dark;
+        --background: #0a1020;
+        --foreground: #e2e8f0;
+        --card: #111a2e;
+        --muted: #1a2540;
+        --muted-foreground: #9aa8bf;
+        --border: #23304d;
+        --input: #334366;
+        --ring: #93c5fd;
+        --brand: #e2e8f0;
+        --brand-foreground: #0f1e3d;
+        --sidebar: #0d1528;
+        --sidebar-accent: #1a2540;
+        --chart-1: #60a5fa;
+        --chart-2: #fb923c;
+    }
+
+    .dark :focus-visible {
+        outline-color: var(--ring);
+    }
+}
+
 @layer base {
     html {
         scroll-padding-top: 5rem;
@@ -150,7 +226,7 @@
     }
 
     .field {
-        @apply w-full rounded-input border border-fog bg-mist px-3 py-2.5 text-body text-carbon placeholder:text-ash focus:border-primary focus:bg-paper-white;
+        @apply w-full rounded-input border border-fog bg-mist px-3 py-2.5 text-body text-carbon placeholder:text-ash focus:border-primary focus:bg-paper-white dark:border-input dark:bg-muted dark:text-foreground dark:placeholder:text-muted-foreground dark:focus:border-ring dark:focus:bg-card;
     }
 
     .tab {
@@ -181,6 +257,18 @@
     --animate-spin-slow: spin 40s linear infinite;
     --animate-spin-rev: spin-rev 60s linear infinite;
     --animate-draw: draw 0.9s 0.2s cubic-bezier(0.6, 0, 0.2, 1) both;
+    /* Garis tipis di atas layar saat daftar memuat data (components/daftar/status). */
+    --animate-muat: muat 1s ease-in-out infinite;
+
+    @keyframes muat {
+        from {
+            transform: translateX(-100%);
+        }
+
+        to {
+            transform: translateX(300%);
+        }
+    }
 
     @keyframes float {
 

@@ -1,164 +1,151 @@
-@extends('layouts.panel')
+@extends('layouts.admin')
 
-@section('title', 'Dashboard admin')
+@section('title', 'Dashboard')
+
+@section('heading', 'Selamat datang kembali, ' . \Illuminate\Support\Str::before(auth()->user()->name . ' ', ' '))
 
 @section('content')
     @php
-        $ikonPeran = [
-            'mahasiswa' => '<path d="m12 4 10 5-10 5L2 9l10-5Z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
-            'dosen' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-            'mitra' => '<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/>',
-        ];
-        $ikonInfo = [
-            'magang' => '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
-            'lomba' => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
-            'beasiswa' => '<path d="m12 4 10 5-10 5L2 9l10-5Z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M22 9v6"/>',
-        ];
         // Status informasi: warna + label + angka (warna tidak pernah berdiri sendiri).
         $statusInfo = [
-            'dibuka' => ['Dibuka', 'bg-[#16a34a]'],
-            'ditutup' => ['Ditutup', 'bg-[#94a3b8]'],
-            'disembunyikan' => ['Disembunyikan', 'bg-accent-dark'],
+            'dibuka' => ['Dibuka', 'bg-emerald-500'],
+            'ditutup' => ['Ditutup', 'bg-slate-400 dark:bg-slate-500'],
+            'disembunyikan' => ['Disembunyikan', 'bg-amber-500'],
         ];
         $totalPengguna = collect($pengguna)->sum('total');
         $totalNonaktif = collect($pengguna)->sum('nonaktif');
         $totalInfo = collect($informasi)->sum('total');
         $totalDibuka = collect($informasi)->sum('dibuka');
+        $rincianPeran = collect($pengguna)->map(fn ($d) => $d['total'] . ' ' . mb_strtolower($d['label']))->join(' · ');
     @endphp
 
-    {{-- Kepala dasbor --}}
-    <section class="relative isolate overflow-hidden bg-navy text-paper-white">
-        <div class="hero-dots pointer-events-none absolute inset-0" aria-hidden="true"></div>
-        <div class="pointer-events-none absolute -top-32 right-[-5%] size-[420px] rounded-full bg-primary/50 blur-3xl" aria-hidden="true"></div>
-
-        <div class="relative mx-auto max-w-page px-4 pt-10 pb-10 sm:px-6 md:pt-12">
-            <p class="text-sm font-semibold text-accent">Panel admin · {{ \App\Support\Tanggal::panjang(today()) }}</p>
-            <h1 class="mt-2 text-heading font-bold tracking-[-0.8px]">Halo, {{ auth()->user()->name }}</h1>
-            <p class="mt-2 text-white/70">Ringkasan pengguna dan informasi CampusLink hari ini.</p>
+    <div class="flex flex-col gap-6">
+        {{-- Ringkasan angka --}}
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <x-admin.stat-card label="Total pengguna" :value="$totalPengguna" icon="users" :hint="$rincianPeran" />
+            <x-admin.stat-card label="Informasi dibuka" :value="$totalDibuka" icon="file" :hint="'dari ' . $totalInfo . ' informasi'" />
+            <x-admin.stat-card label="Pendaftar menunggu" :value="$pendaftarMenunggu" icon="clipboard" hint="kegiatan kampus" :warn="$pendaftarMenunggu > 0" />
+            <x-admin.stat-card label="Mitra menunggu" :value="$menunggu" icon="shield-check"
+                               :hint="$menunggu > 0 ? 'perlu verifikasi' : 'semua sudah diproses'" :warn="$menunggu > 0" />
         </div>
-    </section>
 
-    <section class="bg-[#f7f8fc]">
-        <div class="mx-auto max-w-page space-y-10 px-4 py-10 sm:px-6 md:py-12">
+        {{-- Grafik pendaftar --}}
+        <x-admin.card title="Pendaftar kegiatan kampus" description="Pendaftar masuk dibandingkan yang sudah ditinjau selama delapan minggu terakhir">
+            <x-admin.area-chart :data="$grafik" x="minggu" label="Pendaftar kegiatan kampus per minggu, delapan minggu terakhir"
+                                :series="[
+                                    ['key' => 'masuk', 'label' => 'Pendaftar masuk', 'color' => 'var(--chart-1)', 'dashed' => true],
+                                    ['key' => 'ditinjau', 'label' => 'Sudah ditinjau', 'color' => 'var(--chart-2)'],
+                                ]" />
+        </x-admin.card>
 
-            {{-- Perlu tindakan --}}
-            @if ($menunggu > 0)
-                <a href="{{ route('admin.mitra.index') }}"
-                   class="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-accent/40 bg-accent-wash p-5 transition hover:border-accent sm:p-6">
-                    <div class="flex items-center gap-4">
-                        <span class="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent text-navy">
-                            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
-                            <span class="absolute -top-1 -right-1 flex size-3"><span class="absolute inline-flex size-full animate-ping rounded-full bg-accent-dark opacity-60"></span><span class="relative inline-flex size-3 rounded-full bg-accent-dark"></span></span>
-                        </span>
-                        <div>
-                            <p class="font-semibold text-carbon">{{ $menunggu }} akun mitra menunggu verifikasi</p>
-                            <p class="text-sm text-graphite">Mitra belum bisa masuk sebelum disetujui.</p>
-                        </div>
-                    </div>
-                    <span class="btn btn-primary px-6 py-2.5">Tinjau sekarang &rarr;</span>
-                </a>
-            @else
-                <div class="flex items-center gap-3 rounded-2xl border border-[#16a34a]/25 bg-mint-wash px-5 py-4 text-sm">
-                    <svg class="size-5 shrink-0 text-[#15803d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
-                    <span><span class="font-semibold">Tidak ada yang perlu ditinjau.</span> Semua pendaftaran mitra sudah diproses.</span>
-                </div>
-            @endif
+        <div class="grid gap-6 lg:grid-cols-2">
+            {{-- Kegiatan kampus yang masih dibuka --}}
+            <x-admin.card title="Kegiatan kampus aktif" description="Progres peninjauan pendaftar">
+                <x-slot:actions>
+                    <x-admin.button variant="ghost" size="sm" :href="route('admin.pendaftar.index')">Lihat pendaftar</x-admin.button>
+                </x-slot:actions>
 
-            @if ($pendaftarMenunggu > 0)
-                <a href="{{ route('admin.pendaftar.index') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary-wash px-5 py-4 transition hover:border-primary/40">
-                    <span><span class="font-semibold">{{ $pendaftarMenunggu }} pendaftar kegiatan kampus</span> menunggu ditinjau admin.</span>
-                    <span class="font-semibold text-primary">Tinjau &rarr;</span>
-                </a>
-            @endif
-
-            {{-- Pengguna --}}
-            <div>
-                <div class="flex items-end justify-between gap-3">
-                    <h2 class="text-subheading font-semibold">Pengguna</h2>
-                    <a href="{{ route('admin.pengguna.index') }}" class="text-sm font-medium text-accent-dark hover:underline">Kelola pengguna &rarr;</a>
-                </div>
-                <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="rounded-2xl bg-navy p-5 text-paper-white">
-                        <p class="text-sm text-white/70">Total pengguna</p>
-                        <p class="mt-2 text-heading font-bold tabular-nums" x-data="hitung({{ $totalPengguna }})" x-text="n">{{ $totalPengguna }}</p>
-                        <p class="mt-1 text-sm text-white/60">{{ $totalNonaktif }} nonaktif</p>
-                    </div>
-                    @foreach ($pengguna as $peran => $data)
-                        <div class="rounded-2xl border border-fog bg-paper-white p-5">
-                            <div class="flex items-center justify-between">
-                                <p class="text-sm text-graphite">{{ $data['label'] }}</p>
-                                <span class="flex size-9 items-center justify-center rounded-xl bg-accent-wash text-accent-dark">
-                                    <svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $ikonPeran[$peran] !!}</svg>
-                                </span>
+                <div class="flex flex-col gap-5">
+                    @forelse ($kegiatan as $item)
+                        @php
+                            $kategori = $item->kategori();
+                            $sisa = $item->pendaftaran_count - $item->ditinjau_count;
+                            $persen = $item->pendaftaran_count > 0 ? (int) round($item->ditinjau_count / $item->pendaftaran_count * 100) : 0;
+                            [$varian, $teksStatus] = match (true) {
+                                $sisa > 0 => ['warning', $sisa . ' perlu ditinjau'],
+                                $item->pendaftaran_count > 0 => ['success', 'Selesai ditinjau'],
+                                default => ['outline', 'Belum ada pendaftar'],
+                            };
+                        @endphp
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <h3 class="truncate text-sm font-medium">
+                                    <a href="{{ route('admin.informasi.edit', [$kategori, $item->id]) }}" class="hover:underline">{{ $item->judul }}</a>
+                                </h3>
+                                <x-admin.badge :variant="$varian">{{ $teksStatus }}</x-admin.badge>
                             </div>
-                            <p class="mt-1 text-heading font-bold tabular-nums text-carbon" x-data="hitung({{ $data['total'] }})" x-text="n">{{ $data['total'] }}</p>
-                            <p class="mt-1 text-sm {{ $data['nonaktif'] > 0 ? 'text-accent-dark' : 'text-graphite' }}">{{ $data['nonaktif'] }} nonaktif</p>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Informasi --}}
-            <div>
-                <div class="flex flex-wrap items-end justify-between gap-3">
-                    <h2 class="text-subheading font-semibold">Informasi</h2>
-                    <p class="text-sm text-graphite"><span class="font-semibold text-carbon">{{ $totalDibuka }}</span> dari {{ $totalInfo }} informasi sedang dibuka</p>
-                </div>
-                <div class="mt-4 grid gap-4 md:grid-cols-3">
-                    @foreach ($informasi as $kunci => $data)
-                        <div class="flex flex-col rounded-2xl border border-fog bg-paper-white p-5">
+                            <p class="text-xs text-muted-foreground">{{ \App\Support\Informasi::LABEL[$kategori] }} · {{ $item->pendaftaran_count }} pendaftar, {{ $item->ditinjau_count }} sudah ditinjau</p>
                             <div class="flex items-center gap-3">
-                                <span class="flex size-10 items-center justify-center rounded-xl bg-navy text-accent">
-                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $ikonInfo[$kunci] !!}</svg>
+                                <x-admin.progress :value="$persen" :label="'Progres peninjauan ' . $item->judul" />
+                                <span class="shrink-0 text-xs text-muted-foreground tabular-nums">{{ $persen }}%</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="flex items-center gap-1">
+                                    @foreach ($item->pendaftaran as $p)
+                                        @if ($p->user->mahasiswa)
+                                            @include('direktori._avatar', ['profil' => $p->user->mahasiswa, 'nama' => $p->user->name, 'ukuran' => 'size-6', 'teks' => 'text-[10px]', 'cincin' => ''])
+                                        @else
+                                            <x-admin.avatar :name="$p->user->name" class="size-6 text-[10px]" />
+                                        @endif
+                                    @endforeach
                                 </span>
-                                <p class="flex-1 font-semibold">{{ $data['label'] }}</p>
-                                <p class="text-heading-sm font-bold tabular-nums">{{ $data['total'] }}</p>
+                                <span class="text-xs text-muted-foreground">Batas {{ \App\Support\Tanggal::panjang($item->batas_pendaftaran) }}</span>
                             </div>
-
-                            {{-- Batang proporsi status; arahkan kursor ke tiap bagian untuk melihat angkanya --}}
-                            <div class="mt-5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-mist" role="img"
-                                 aria-label="{{ $data['label'] }}: {{ $data['dibuka'] }} dibuka, {{ $data['ditutup'] }} ditutup, {{ $data['disembunyikan'] }} disembunyikan">
-                                @foreach ($statusInfo as $status => [$nama, $warna])
-                                    @if ($data[$status] > 0)
-                                        <span class="{{ $warna }} h-full first:rounded-l-full last:rounded-r-full" style="width: {{ $data[$status] / max($data['total'], 1) * 100 }}%"
-                                              title="{{ $nama }}: {{ $data[$status] }}"></span>
-                                    @endif
-                                @endforeach
-                            </div>
-
-                            <dl class="mt-4 space-y-2 text-sm">
-                                @foreach ($statusInfo as $status => [$nama, $warna])
-                                    <div class="flex items-center justify-between">
-                                        <dt class="flex items-center gap-2 text-graphite"><span class="size-2.5 rounded-full {{ $warna }}" aria-hidden="true"></span>{{ $nama }}</dt>
-                                        <dd class="font-semibold tabular-nums text-carbon">{{ $data[$status] }}</dd>
-                                    </div>
-                                @endforeach
-                            </dl>
-
-                            <a href="{{ route('admin.informasi.index', $kunci) }}" class="btn btn-outline mt-5 w-full py-2.5">Kelola {{ mb_strtolower($data['label']) }}</a>
                         </div>
-                    @endforeach
+                    @empty
+                        <x-admin.empty-state title="Belum ada kegiatan kampus yang dibuka." icon="clipboard" class="py-8">
+                            Kegiatan kampus adalah informasi buatan admin dengan cara daftar lewat CampusLink.
+                        </x-admin.empty-state>
+                    @endforelse
                 </div>
-            </div>
+            </x-admin.card>
 
-            {{-- Pintasan --}}
-            <div class="grid gap-4 sm:grid-cols-3">
-                @foreach ([
-                    ['Verifikasi mitra', 'Setujui atau tolak pendaftaran mitra baru.', route('admin.mitra.index'), '<path d="M12 3 4 6v6c0 4.5 3.4 8.2 8 9 4.6-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>'],
-                    ['Pengguna', 'Cari, ubah, atau nonaktifkan akun.', route('admin.pengguna.index'), '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>'],
-                    ['Keahlian', 'Atur daftar bidang keahlian untuk direktori.', route('admin.keahlian.index'), '<path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9L12 3Z"/>'],
-                ] as [$judul, $teks, $url, $ikon])
-                    <a href="{{ $url }}" class="group flex items-start gap-4 rounded-2xl border border-fog bg-paper-white p-5 transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[0_18px_40px_-24px_rgb(15_30_61/0.45)]">
-                        <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-wash text-accent-dark">
-                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $ikon !!}</svg>
-                        </span>
-                        <span>
-                            <span class="block font-semibold group-hover:text-accent-dark">{{ $judul }}</span>
-                            <span class="mt-0.5 block text-sm text-graphite">{{ $teks }}</span>
-                        </span>
-                    </a>
-                @endforeach
-            </div>
+            {{-- Aktivitas terbaru --}}
+            <x-admin.card title="Aktivitas terbaru" description="Akun, informasi, dan pendaftar terbaru">
+                @if ($aktivitas->isEmpty())
+                    <x-admin.empty-state title="Belum ada aktivitas." class="py-8" />
+                @else
+                    <ol class="flex flex-col gap-4">
+                        @foreach ($aktivitas as $a)
+                            <li class="flex items-start gap-3">
+                                <x-admin.avatar :name="$a['nama']" class="size-8" />
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm leading-snug break-words">
+                                        <span class="font-medium">{{ $a['nama'] }}</span>
+                                        <span class="text-muted-foreground">{{ $a['aksi'] }}</span>
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        <time datetime="{{ $a['waktu']->toIso8601String() }}" title="{{ \App\Support\Tanggal::panjang($a['waktu']) }}">{{ $a['waktu']->copy()->locale('id')->diffForHumans() }}</time>
+                                    </p>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </x-admin.card>
         </div>
-    </section>
+
+        {{-- Status informasi per kategori --}}
+        <x-admin.card title="Informasi per kategori" :description="$totalDibuka . ' dari ' . $totalInfo . ' informasi sedang dibuka · ' . $totalNonaktif . ' akun nonaktif'">
+            <ul class="grid gap-6 md:grid-cols-3">
+                @foreach ($informasi as $kunci => $data)
+                    <li>
+                        <div class="flex items-center justify-between gap-2">
+                            <a href="{{ route('admin.informasi.index', $kunci) }}" class="flex items-center gap-2 text-sm font-medium hover:underline">
+                                <x-admin.icon :name="$kunci" class="size-4 text-muted-foreground" />
+                                {{ $data['label'] }}
+                            </a>
+                            <span class="text-sm font-semibold tabular-nums">{{ $data['total'] }}</span>
+                        </div>
+                        <div class="mt-2.5 flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted" role="img"
+                             aria-label="{{ $data['label'] }}: {{ $data['dibuka'] }} dibuka, {{ $data['ditutup'] }} ditutup, {{ $data['disembunyikan'] }} disembunyikan">
+                            @foreach ($statusInfo as $status => [$nama, $warna])
+                                @if ($data[$status] > 0)
+                                    <span class="{{ $warna }} h-full" style="width: {{ $data[$status] / max($data['total'], 1) * 100 }}%" title="{{ $nama }}: {{ $data[$status] }}"></span>
+                                @endif
+                            @endforeach
+                        </div>
+                        <dl class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                            @foreach ($statusInfo as $status => [$nama, $warna])
+                                <div class="flex items-center gap-1.5">
+                                    <dt class="flex items-center gap-1.5 text-muted-foreground"><span class="size-2 rounded-full {{ $warna }}" aria-hidden="true"></span>{{ $nama }}</dt>
+                                    <dd class="font-medium tabular-nums">{{ $data[$status] }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </li>
+                @endforeach
+            </ul>
+        </x-admin.card>
+    </div>
 @endsection

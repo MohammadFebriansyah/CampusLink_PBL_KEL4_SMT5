@@ -17,6 +17,9 @@ class AdminCariRequest extends FormRequest
     {
         return [
             'q' => ['nullable', 'string', 'max:100'],
+            'urut' => ['nullable', 'string', 'max:30'], // kunci yang tidak dikenal diabaikan Urutan::terapkan()
+            'arah' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_halaman' => ['nullable', 'integer'], // di luar 10/20/50 memakai jumlah bawaan daftar (Daftar::perHalaman)
             'peran' => ['nullable', Rule::in(['mahasiswa', 'dosen', 'mitra'])],
             'akun' => ['nullable', Rule::in(['aktif', 'nonaktif'])],
             'tayang' => ['nullable', Rule::in(['dibuka', 'ditutup', 'disembunyikan'])],

@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CariDaftarRequest;
+use App\Http\Resources\BimbinganMasukResource;
 use App\Models\Beasiswa;
 use App\Models\Bimbingan;
 use App\Models\Lomba;
 use App\Models\Magang;
 use App\Models\User;
+use App\Support\Daftar;
 use App\Support\Informasi;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -29,7 +34,7 @@ class BimbinganController extends Controller
         return User::query()
             ->where('role', User::ROLE_DOSEN)
             ->where('status', User::STATUS_AKTIF)
-            ->whereHas('dosen', fn($q) => $q->where($kolom, true))
+            ->whereHas('dosen', fn ($q) => $q->where($kolom, true))
             ->with('dosen:id,user_id,program_studi,jurusan')
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -74,7 +79,7 @@ class BimbinganController extends Controller
             'bukti' => $luar ? ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'] : ['prohibited'],
         ], [
             'dosen_id.required' => 'Pilih dosen pembimbing.',
-            'dosen_id.in' => 'Dosen ini tidak tersedia untuk membimbing ' . $kategori . '.',
+            'dosen_id.in' => 'Dosen ini tidak tersedia untuk membimbing '.$kategori.'.',
             'bukti.required' => 'Unggah bukti bahwa Anda sudah diterima oleh penyelenggara.',
             'bukti.mimes' => 'Bukti harus berupa PDF, JPG, atau PNG.',
             'bukti.max' => 'Ukuran bukti maksimal 2 MB.',
@@ -133,21 +138,31 @@ class BimbinganController extends Controller
 
     // ---------- Dosen ----------
 
-    public function index(Request $request): View
+    public function index(CariDaftarRequest $request): JsonResponse|Response
     {
-        $status = $request->query('status', Bimbingan::STATUS_MENUNGGU);
-        $status = in_array($status, ['menunggu', 'diterima', 'ditolak'], true) ? $status : 'menunggu';
+        $f = $request->validated();
+        $status = in_array($f['status'] ?? null, ['menunggu', 'diterima', 'ditolak'], true) ? $f['status'] : Bimbingan::STATUS_MENUNGGU;
 
         $semua = $request->user()->bimbinganMasuk();
         $jumlah = (clone $semua)->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
 
-        return view('bimbingan.index', [
-            'status' => $status,
-            'jumlah' => $jumlah,
-            'daftar' => (clone $semua)->where('status', $status)
-                ->with(['informasi.user', 'mahasiswa.mahasiswa', 'mahasiswa.keahlian'])
-                ->latest()->paginate(15)->withQueryString(),
-        ]);
+        $query = (clone $semua)->where('status', $status)
+            ->with(['informasi.user', 'mahasiswa.mahasiswa', 'mahasiswa.keahlian'])
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHas('mahasiswa', fn ($m) => $m->whereLike('name', "%{$v}%")));
+
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'diajukan' => 'created_at',
+        ], ['diajukan', 'desc']);
+
+        return Daftar::tanggapi(
+            $request,
+            BimbinganMasukResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'bimbingan.index',
+            ['q' => $f['q'] ?? '', 'status' => $status] + $urutan + ['per_halaman' => $perHalaman],
+            tambahan: ['jumlah' => $jumlah],
+            dataView: ['jumlah' => $jumlah],
+        );
     }
 
     public function terima(Request $request, string $id): RedirectResponse
