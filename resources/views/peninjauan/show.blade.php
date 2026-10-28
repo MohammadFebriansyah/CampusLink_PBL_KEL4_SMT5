@@ -1,4 +1,4 @@
-{{-- Dipakai panel admin (layouts.admin) dan panel mitra (layouts.panel); isi memakai komponen x-admin.* untuk keduanya. --}}
+{{-- Dipakai panel admin (layouts.admin) dan panel mitra (layouts.panel); tampilan keduanya sama (komponen x-admin.*). --}}
 @extends($panel === 'admin' ? 'layouts.admin' : 'layouts.panel')
 
 @section('title', 'Pendaftar ' . $p->user->name)
@@ -28,16 +28,9 @@
         ];
     @endphp
 
-    @if ($panel === 'admin')
-        <x-admin.page-header :title="$kepala['judul']" :description="$kepala['deskripsi']" :back="$kepala['kembali'][0]" :back-label="$kepala['kembali'][1]" />
-    @else
-        @include('mitra._kepala', $kepala)
-    @endif
+    <x-admin.page-header :title="$kepala['judul']" :description="$kepala['deskripsi']" :back="$kepala['kembali'][0]" :back-label="$kepala['kembali'][1]" />
 
-    <div @class([
-        'grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start',
-        'mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10' => $panel !== 'admin',
-    ])>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
         {{-- Profil pendaftar --}}
         <div class="space-y-6">
             <x-admin.card>
