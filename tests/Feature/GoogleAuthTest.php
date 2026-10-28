@@ -36,9 +36,9 @@ class GoogleAuthTest extends TestCase
         $raw = array_merge([
             'sub' => $id,
             'name' => 'Alya Putri',
-            'email' => 'alya@polinema.ac.id',
+            'email' => 'alya@student.polinema.ac.id',
             'email_verified' => true,
-            'hd' => 'polinema.ac.id',
+            'hd' => 'student.polinema.ac.id',
         ], $ubah);
 
         $pengguna = (new SocialiteUser)->setRaw($raw)->map([
@@ -76,12 +76,13 @@ class GoogleAuthTest extends TestCase
 
         $this->get(route('google.redirect', ['peran' => 'dosen']))->assertRedirect('https://accounts.google.com/o/oauth2/auth');
     }
-    public function test_pengalihan_untuk_mahasiswa_tanpa_petunjuk_domain(): void
+
+    public function test_pengalihan_untuk_mahasiswa_membawa_petunjuk_domain_student(): void
     {
-        $provider = \Mockery::mock(\Laravel\Socialite\Two\GoogleProvider::class);
-        $provider->shouldReceive('with')->once()->with(['prompt' => 'select_account'])->andReturnSelf();
+        $provider = Mockery::mock(GoogleProvider::class);
+        $provider->shouldReceive('with')->once()->with(['prompt' => 'select_account', 'hd' => 'student.polinema.ac.id'])->andReturnSelf();
         $provider->shouldReceive('redirect')->once()->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));
-        \Laravel\Socialite\Facades\Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
         $this->get(route('google.redirect', ['peran' => 'mahasiswa']))
             ->assertRedirect('https://accounts.google.com/o/oauth2/auth');
@@ -144,9 +145,9 @@ class GoogleAuthTest extends TestCase
 
         $this->assertGuest();
         $this->assertDatabaseCount('users', 0);
-        $this->assertSame('alya@polinema.ac.id', session('google_pending.email'));
+        $this->assertSame('alya@student.polinema.ac.id', session('google_pending.email'));
 
-        $this->get(route('google.lengkapi'))->assertOk()->assertSee('alya@polinema.ac.id');
+        $this->get(route('google.lengkapi'))->assertOk()->assertSee('alya@student.polinema.ac.id');
     }
 
     public function test_melengkapi_data_mahasiswa_membuat_akun_tanpa_password_dan_langsung_masuk(): void
@@ -158,11 +159,11 @@ class GoogleAuthTest extends TestCase
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
-            'email' => 'alya@polinema.ac.id',
+            'email' => 'alya@student.polinema.ac.id',
             'role' => 'mahasiswa',
             'google_id' => 'g-1',
         ]);
-        $this->assertNull(User::where('email', 'alya@polinema.ac.id')->value('password'));
+        $this->assertNull(User::where('email', 'alya@student.polinema.ac.id')->value('password'));
         $this->assertDatabaseHas('mahasiswa', ['nim' => '2441079001', 'jurusan' => 'Teknologi Informasi']);
         $this->assertNull(session('google_pending')); // sesi sementara dibersihkan
     }
@@ -201,15 +202,15 @@ class GoogleAuthTest extends TestCase
         $this->tiruGoogle();
         $this->get(route('google.callback'));
 
-        $this->post(route('google.simpan'), $this->dataMahasiswa(['email' => 'orang-lain@polinema.ac.id', 'role' => 'admin']));
+        $this->post(route('google.simpan'), $this->dataMahasiswa(['email' => 'orang-lain@student.polinema.ac.id', 'role' => 'admin']));
 
-        $this->assertDatabaseHas('users', ['email' => 'alya@polinema.ac.id', 'role' => 'mahasiswa']);
-        $this->assertDatabaseMissing('users', ['email' => 'orang-lain@polinema.ac.id']);
+        $this->assertDatabaseHas('users', ['email' => 'alya@student.polinema.ac.id', 'role' => 'mahasiswa']);
+        $this->assertDatabaseMissing('users', ['email' => 'orang-lain@student.polinema.ac.id']);
     }
 
     public function test_nim_ganda_ditolak(): void
     {
-        $lain = User::factory()->create(['email' => 'lain@polinema.ac.id']);
+        $lain = User::factory()->create(['email' => 'lain@student.polinema.ac.id']);
         $lain->mahasiswa()->create([
             'nim' => '2441079001',
             'kelas' => 'SIB-3A',
@@ -222,7 +223,7 @@ class GoogleAuthTest extends TestCase
         $this->get(route('google.callback'));
 
         $this->post(route('google.simpan'), $this->dataMahasiswa())->assertSessionHasErrors('nim');
-        $this->assertDatabaseMissing('users', ['email' => 'alya@polinema.ac.id']);
+        $this->assertDatabaseMissing('users', ['email' => 'alya@student.polinema.ac.id']);
     }
 
     public function test_melengkapi_tanpa_sesi_google_dialihkan_ke_login(): void
@@ -249,7 +250,7 @@ class GoogleAuthTest extends TestCase
 
     public function test_akun_yang_sudah_terhubung_google_langsung_masuk(): void
     {
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
         $user->google_id = 'g-1';
         $user->save();
 
@@ -262,36 +263,36 @@ class GoogleAuthTest extends TestCase
     public function test_akun_password_lama_ditautkan_dan_password_lamanya_dihapus(): void
     {
         // Skenario penyamaran: seseorang mendaftar dengan email polinema orang lain dan password buatannya.
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']); // password "password"
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']); // password "password"
         $this->tiruGoogle();
 
         $this->get(route('google.callback'))->assertRedirect(route('profil.show'));
 
         $this->assertAuthenticatedAs($user);
         $this->assertSame('g-1', $user->fresh()->google_id);
-        $this->assertNull(User::where('email', 'alya@polinema.ac.id')->value('password'));
+        $this->assertNull(User::where('email', 'alya@student.polinema.ac.id')->value('password'));
 
         // Password lama tidak bisa dipakai lagi.
         $this->post(route('logout'));
-        $this->post(route('login.store'), ['email' => 'alya@polinema.ac.id', 'password' => 'password'])
+        $this->post(route('login.store'), ['email' => 'alya@student.polinema.ac.id', 'password' => 'password'])
             ->assertSessionHasErrors('email');
         $this->assertGuest();
     }
 
     public function test_admin_dan_mitra_tidak_bisa_masuk_lewat_google(): void
     {
-        User::factory()->create(['email' => 'alya@polinema.ac.id', 'role' => User::ROLE_ADMIN]);
+        User::factory()->create(['email' => 'alya@student.polinema.ac.id', 'role' => User::ROLE_ADMIN]);
         $this->tiruGoogle();
 
         $this->get(route('google.callback'))->assertRedirect(route('login'))->assertSessionHas('galat');
 
         $this->assertGuest();
-        $this->assertNull(User::where('email', 'alya@polinema.ac.id')->value('google_id'));
+        $this->assertNull(User::where('email', 'alya@student.polinema.ac.id')->value('google_id'));
     }
 
     public function test_akun_nonaktif_tidak_bisa_masuk_lewat_google(): void
     {
-        User::factory()->create(['email' => 'alya@polinema.ac.id', 'status' => User::STATUS_NONAKTIF]);
+        User::factory()->create(['email' => 'alya@student.polinema.ac.id', 'status' => User::STATUS_NONAKTIF]);
         $this->tiruGoogle();
 
         $this->get(route('google.callback'))->assertRedirect(route('login'))->assertSessionHas('galat');
@@ -300,11 +301,11 @@ class GoogleAuthTest extends TestCase
 
     public function test_akun_google_tanpa_password_tidak_bisa_masuk_dengan_password(): void
     {
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
         User::whereKey($user->id)->update(['password' => null, 'google_id' => 'g-1']);
 
         foreach (['', 'password', 'apa-saja'] as $coba) {
-            $this->post(route('login.store'), ['email' => 'alya@polinema.ac.id', 'password' => $coba])
+            $this->post(route('login.store'), ['email' => 'alya@student.polinema.ac.id', 'password' => $coba])
                 ->assertSessionHasErrors();
         }
 
@@ -315,7 +316,7 @@ class GoogleAuthTest extends TestCase
 
     public function test_pengguna_yang_sudah_masuk_bisa_menghubungkan_google_dan_password_tetap(): void
     {
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
         $this->tiruGoogle();
 
         $this->actingAs($user)->get(route('google.callback'))
@@ -329,8 +330,8 @@ class GoogleAuthTest extends TestCase
 
     public function test_menghubungkan_google_dengan_email_berbeda_ditolak(): void
     {
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']);
-        $this->tiruGoogle(['email' => 'lain@polinema.ac.id']);
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
+        $this->tiruGoogle(['email' => 'lain@student.polinema.ac.id']);
 
         $this->actingAs($user)->get(route('google.callback'))->assertSessionHas('galat');
 
@@ -339,11 +340,11 @@ class GoogleAuthTest extends TestCase
 
     public function test_google_id_tidak_bisa_dipakai_dua_akun(): void
     {
-        $pertama = User::factory()->create(['email' => 'pertama@polinema.ac.id']);
+        $pertama = User::factory()->create(['email' => 'pertama@student.polinema.ac.id']);
         $pertama->google_id = 'g-1';
         $pertama->save();
 
-        $kedua = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $kedua = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
         $this->tiruGoogle(); // id g-1 tetapi email alya
 
         // Google id g-1 milik akun pertama, jadi pengguna yang masuk sebagai "kedua" tidak boleh mengklaimnya.
@@ -396,9 +397,46 @@ class GoogleAuthTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'alya@student.polinema.ac.id', 'role' => 'mahasiswa']);
     }
 
+    public function test_akun_google_dosen_tidak_bisa_mendaftar_sebagai_mahasiswa(): void
+    {
+        // @polinema.ac.id milik dosen; mahasiswa wajib @student.polinema.ac.id.
+        $this->tiruGoogle(['email' => 'rina@polinema.ac.id', 'hd' => 'polinema.ac.id']);
+        $this->get(route('google.callback'))->assertRedirect(route('google.lengkapi'));
+
+        $this->post(route('google.simpan'), $this->dataMahasiswa())
+            ->assertRedirect(route('google.lengkapi', ['peran' => 'mahasiswa']))
+            ->assertSessionHas('galat', 'Mahasiswa wajib memakai akun Google @student.polinema.ac.id.');
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_penautan_google_pertama_kali_mengikuti_domain_peran(): void
+    {
+        // Akun mahasiswa lama dengan email domain dosen: tidak boleh ditautkan ke Google lewat login.
+        $lama = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $this->tiruGoogle(['email' => 'alya@polinema.ac.id', 'hd' => 'polinema.ac.id']);
+
+        $this->get(route('google.callback'))->assertRedirect(route('login'))->assertSessionHas('galat');
+        $this->assertGuest();
+        $this->assertNull($lama->fresh()->google_id);
+        $this->assertNotNull($lama->fresh()->password); // kata sandi lama tidak dihapus karena penautan ditolak
+
+        // Juga lewat tombol "Verifikasi dengan Google" saat sudah masuk.
+        $this->actingAs($lama)->get(route('google.callback'))->assertSessionHas('galat');
+        $this->assertNull($lama->fresh()->google_id);
+    }
+
+    public function test_akun_google_baru_langsung_terverifikasi(): void
+    {
+        $this->tiruGoogle();
+        $this->get(route('google.callback'));
+        $this->post(route('google.simpan'), $this->dataMahasiswa());
+
+        $this->assertNotNull(User::where('email', 'alya@student.polinema.ac.id')->value('email_verified_at'));
+    }
+
     public function test_profil_menawarkan_verifikasi_google_bagi_yang_belum(): void
     {
-        $user = User::factory()->create(['email' => 'alya@polinema.ac.id']);
+        $user = User::factory()->create(['email' => 'alya@student.polinema.ac.id']);
         $user->mahasiswa()->create([
             'nim' => '2441079001',
             'kelas' => 'SIB-3A',

@@ -17,10 +17,14 @@
  */
 return [
     /*
-     * Domain email warga kampus, dipakai untuk masuk dengan Google.
+     * Domain email warga kampus per peran, dipakai registrasi email, Google SSO, dan ubah email oleh admin.
+     * @student.polinema.ac.id hanya milik mahasiswa, @polinema.ac.id hanya milik dosen. Dicocokkan
+     * persis dengan bagian setelah "@" (subdomain atau domain lain yang mirip tidak lolos).
+     * Akun lama dengan domain lain tetap bisa masuk; aturan ini berlaku untuk pendaftaran dan
+     * penautan Google yang baru.
      */
     'domain_email_per_peran' => [
-        'mahasiswa' => ['polinema.ac.id', 'student.polinema.ac.id'],
+        'mahasiswa' => ['student.polinema.ac.id'],
         'dosen' => ['polinema.ac.id'],
     ],
 

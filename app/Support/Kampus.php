@@ -44,28 +44,48 @@ class Kampus
         return array_values(array_unique(array_merge(...array_values(config('kampus.domain_email_per_peran')))));
     }
 
-    /** Cocok persis dengan "@domain". Subdomain lain dan domain palsu tidak lolos. */
-    public static function emailSesuaiPeran(string $email, string $peran): bool
+    /**
+     * Domain email (bagian setelah "@"), huruf kecil dan tanpa spasi. Null bila bentuknya bukan
+     * "bagian-lokal@domain" dengan tepat satu "@".
+     */
+    public static function domainDari(string $email): ?string
     {
-        $email = mb_strtolower($email);
+        $bagian = explode('@', mb_strtolower(trim($email)));
 
-        foreach (self::domainEmail($peran) as $domain) {
-            if (str_ends_with($email, '@' . mb_strtolower($domain))) {
-                return true;
-            }
+        if (count($bagian) !== 2 || $bagian[0] === '' || $bagian[1] === '') {
+            return null;
         }
 
-        return false;
+        return $bagian[1];
     }
 
-    /** Contoh: "@polinema.ac.id atau @student.polinema.ac.id" */
+    /**
+     * Domain email sama persis dengan salah satu domain peran ini. Bukan pencocokan substring:
+     * "x@evil-polinema.ac.id", "x@student.polinema.ac.id.evil.com", dan "x@lain.polinema.ac.id" tidak lolos.
+     */
+    public static function emailSesuaiPeran(string $email, string $peran): bool
+    {
+        $domain = self::domainDari($email);
+
+        return $domain !== null && in_array($domain, array_map('mb_strtolower', self::domainEmail($peran)), true);
+    }
+
+    /** Domain email termasuk salah satu domain kampus (peran apa pun). */
+    public static function emailKampus(string $email): bool
+    {
+        $domain = self::domainDari($email);
+
+        return $domain !== null && in_array($domain, array_map('mb_strtolower', self::semuaDomainEmail()), true);
+    }
+
+    /** Contoh: "@student.polinema.ac.id". Bila satu peran punya beberapa domain: "@a atau @b". */
     public static function labelDomain(string $peran): string
     {
-        return collect(self::domainEmail($peran))->map(fn($d) => '@' . $d)->implode(' atau ');
+        return collect(self::domainEmail($peran))->map(fn ($d) => '@'.$d)->implode(' atau ');
     }
 
     public static function labelSemuaDomain(): string
     {
-        return collect(self::semuaDomainEmail())->map(fn($d) => '@' . $d)->implode(' atau ');
+        return collect(self::semuaDomainEmail())->map(fn ($d) => '@'.$d)->implode(' atau ');
     }
 }
