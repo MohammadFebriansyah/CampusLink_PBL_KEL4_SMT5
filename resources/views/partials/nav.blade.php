@@ -106,6 +106,9 @@
                             @if ($saya->role === 'mitra' || $saya->role === 'admin')
                                 {{-- Mitra dan admin: tautan ke dasbor panel masing-masing. --}}
                                 <a href="{{ route($panel['rute']) }}" class="{{ $kelasItem(request()->routeIs($panel['rute'])) }}" @if (request()->routeIs($panel['rute'])) aria-current="page" @endif>{{ $panel['label'] }}</a>
+                            @else
+                                {{-- Mahasiswa dan dosen: dasbor panel (Profil, Kegiatan saya, Bimbingan ada di sidebar panel). --}}
+                                <a href="{{ route('dasbor') }}" class="{{ $kelasItem(false) }}">Dasbor</a>
                             @endif
                             @if ($saya->role === 'mitra')
                                 <a href="{{ route('mitra.profil.show') }}" class="{{ $kelasItem(request()->routeIs('mitra.profil.*')) }}" @if (request()->routeIs('mitra.profil.*')) aria-current="page" @endif>Profil</a>

@@ -1,4 +1,4 @@
-{{-- Dipakai panel admin (layouts.admin) dan panel mitra (layouts.panel); isi memakai komponen x-admin.* untuk keduanya. --}}
+{{-- Dipakai panel admin (layouts.admin) dan panel mitra (layouts.panel); tampilan keduanya sama (komponen x-admin.*). --}}
 @extends($panel === 'admin' ? 'layouts.admin' : 'layouts.panel')
 
 @section('title', 'Pendaftar')
@@ -13,16 +13,11 @@
         $kosong = ['menunggu' => 'Tidak ada pendaftar yang menunggu ditinjau.', 'diterima' => 'Belum ada pendaftar diterima.', 'ditolak' => 'Belum ada pendaftar ditolak.'];
     @endphp
 
-    @if ($panel === 'admin')
-        <x-admin.page-header :title="$judul" :description="$deskripsi" />
-    @else
-        @include('mitra._kepala', ['judul' => $judul, 'deskripsi' => $deskripsi])
-    @endif
+    <x-admin.page-header :title="$judul" :description="$deskripsi" />
 
     <x-daftar.data id="data-pendaftar" :nilai="$awal" />
 
-    <div @class(['mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10' => $panel !== 'admin'])
-         x-data="daftar({ sumber: 'data-pendaftar', bukanFilter: ['status'] })">
+    <div x-data="daftar({ sumber: 'data-pendaftar', bukanFilter: ['status'] })">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <x-admin.tabs label="Status pendaftar" model="status" :jumlah="$jumlah"
                           :items="['menunggu' => 'Menunggu', 'diterima' => 'Diterima', 'ditolak' => 'Ditolak']" />

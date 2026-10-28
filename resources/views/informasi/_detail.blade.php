@@ -8,7 +8,7 @@
     $sisa = \App\Support\Tanggal::sisaHari($item->batas_pendaftaran);
     $warnaSisa = match (true) {
         $sisa < 0 => 'bg-mist text-graphite',
-        $sisa <= 7 => 'bg-[#fee2e2] text-[#b91c1c]',
+        $sisa <= 7 => 'bg-[#fee2e2] text-[#b91c1c] dark:bg-red-500/10 dark:text-red-400',
         $sisa <= 30 => 'bg-accent-wash text-accent-dark',
         default => 'bg-mist text-graphite',
     };
@@ -45,7 +45,7 @@
 
     <dl class="mt-6 grid gap-3 {{ $panel ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3' }}">
         @foreach ($info as [$judul, $nilai, $ikon])
-            <div class="flex items-start gap-3 rounded-2xl bg-[#f7f8fc] p-4">
+            <div class="flex items-start gap-3 rounded-2xl bg-background p-4">
                 <svg class="mt-0.5 size-5 shrink-0 text-accent-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $ikon !!}</svg>
                 <div class="min-w-0">
                     <dt class="text-caption text-graphite">{{ $judul }}</dt>
@@ -69,8 +69,8 @@
         $peran = $peran ?? null;
         $gayaStatus = [
             'menunggu' => ['bg-accent-wash text-accent-dark', 'Menunggu ditinjau'],
-            'diterima' => ['bg-mint-wash text-[#15803d]', 'Diterima'],
-            'ditolak' => ['bg-[#fee2e2] text-[#b91c1c]', 'Ditolak'],
+            'diterima' => ['bg-mint-wash text-[#15803d] dark:text-emerald-400', 'Diterima'],
+            'ditolak' => ['bg-[#fee2e2] text-[#b91c1c] dark:bg-red-500/10 dark:text-red-400', 'Ditolak'],
         ];
         $peninjau = $item->user?->role === 'admin' ? 'admin CampusLink' : 'penyelenggara';
     @endphp
@@ -78,24 +78,24 @@
     {{-- ===== Pendaftaran ===== --}}
     @if ($pd)
         {{-- Mahasiswa sudah mendaftar: tampilkan status --}}
-        <div class="mt-8 rounded-2xl border border-fog bg-[#f7f8fc] p-5">
+        <div class="mt-8 rounded-2xl border border-fog bg-background p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="font-semibold">Pendaftaran Anda</p>
                 <span class="rounded-full px-3 py-1 text-caption font-semibold {{ $gayaStatus[$pd->status][0] }}">{{ $gayaStatus[$pd->status][1] }}</span>
             </div>
             <p class="mt-1 text-sm text-graphite">Dikirim {{ \App\Support\Tanggal::panjang($pd->created_at) }}. Ditinjau oleh {{ $peninjau }}.</p>
             @if ($pd->catatan)
-                <p class="mt-3 rounded-xl bg-paper-white p-3 text-sm"><span class="font-semibold">Catatan:</span> {{ $pd->catatan }}</p>
+                <p class="mt-3 rounded-xl bg-card p-3 text-sm"><span class="font-semibold">Catatan:</span> {{ $pd->catatan }}</p>
             @endif
             <div class="mt-4 flex flex-wrap items-center gap-2">
-                <a href="{{ route('pendaftaran.cv', $pd->id) }}" class="inline-flex items-center rounded-full border border-fog bg-paper-white px-3.5 py-1.5 text-sm font-medium hover:border-accent/50 hover:text-accent-dark">Lihat CV saya</a>
+                <a href="{{ route('pendaftaran.cv', $pd->id) }}" class="inline-flex items-center rounded-full border border-fog bg-card px-3.5 py-1.5 text-sm font-medium hover:border-accent/50 hover:text-accent-dark">Lihat CV saya</a>
                 @if ($pd->status === 'menunggu')
                     @include('partials.aksi', ['url' => route('pendaftaran.destroy', $pd->id), 'method' => 'DELETE', 'tombol' => 'Batalkan pendaftaran', 'pertanyaan' => 'Batalkan?', 'ya' => 'Ya, batalkan'])
                 @endif
             </div>
         </div>
     @elseif (! $terbuka)
-        <div class="mt-8 rounded-2xl border border-fog bg-[#f7f8fc] p-5">
+        <div class="mt-8 rounded-2xl border border-fog bg-background p-5">
             <p class="font-semibold">Pendaftaran sudah ditutup.</p>
             <p class="mt-1 text-sm text-graphite">Batas pendaftaran terlewat pada {{ \App\Support\Tanggal::panjang($item->batas_pendaftaran) }}.</p>
         </div>
@@ -124,7 +124,7 @@
                 @enderror
             </form>
         @else
-            <div class="mt-8 rounded-2xl border border-fog bg-[#f7f8fc] p-5">
+            <div class="mt-8 rounded-2xl border border-fog bg-background p-5">
                 <p class="font-semibold">Pendaftaran lewat CampusLink.</p>
                 <p class="mt-1 text-sm text-graphite">Mahasiswa mendaftar dengan mengunggah CV. Pendaftar ditinjau oleh {{ $peninjau }}.</p>
             </div>
@@ -137,7 +137,7 @@
         @endif
     @else
         {{-- Kegiatan luar: daftar langsung di situs penyelenggara --}}
-        <div class="mt-8 rounded-2xl p-5 {{ $tautanAman ? 'bg-navy text-paper-white' : 'border border-fog bg-[#f7f8fc]' }}">
+        <div class="mt-8 rounded-2xl p-5 {{ $tautanAman ? 'bg-navy text-paper-white' : 'border border-fog bg-background' }}">
             @if ($tautanAman)
                 <p class="font-semibold">Daftar langsung di situs penyelenggara.</p>
                 <p class="mt-1 text-sm text-white/70">Anda akan dialihkan ke situs di luar CampusLink. Seleksi dilakukan oleh penyelenggara.</p>
@@ -167,7 +167,7 @@
                             <span class="ml-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $gayaStatus[$bm->status][0] }}">{{ $bm->status === 'menunggu' ? 'Menunggu persetujuan dosen' : 'Bersedia membimbing' }}</span>
                         </p>
                         @if ($bm->catatan)
-                            <p class="mt-2 rounded-xl bg-[#f7f8fc] p-3 text-sm"><span class="font-semibold">Catatan dosen:</span> {{ $bm->catatan }}</p>
+                            <p class="mt-2 rounded-xl bg-background p-3 text-sm"><span class="font-semibold">Catatan dosen:</span> {{ $bm->catatan }}</p>
                         @endif
                         @if ($bm->status === 'menunggu')
                             <div class="mt-3">
@@ -189,7 +189,7 @@
                     @else
                         @php $luar = ! $item->lewatCampuslink(); @endphp
                         @if ($bm)
-                            <p class="mt-1 text-sm text-[#b91c1c]">{{ $bm->dosen?->name }} tidak dapat membimbing{{ $bm->catatan ? ': ' . $bm->catatan : '.' }} Silakan pilih dosen lain.</p>
+                            <p class="mt-1 text-sm text-[#b91c1c] dark:text-red-400">{{ $bm->dosen?->name }} tidak dapat membimbing{{ $bm->catatan ? ': ' . $bm->catatan : '.' }} Silakan pilih dosen lain.</p>
                         @elseif ($luar)
                             <p class="mt-1 text-sm text-graphite">Sudah diterima oleh penyelenggara? Pilih dosen yang bersedia membimbing {{ $kategori }} dan unggah bukti diterima. Dosen akan menerima atau menolak permintaan Anda.</p>
                         @else
