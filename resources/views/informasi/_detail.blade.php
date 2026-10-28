@@ -201,7 +201,7 @@
                                   @if ($luar) enctype="multipart/form-data" x-data="{ bukti: '' }" @endif>
                                 @csrf
                                 <label for="dosen-{{ $item->id }}" class="sr-only">Dosen pembimbing</label>
-                                <select id="dosen-{{ $item->id }}" name="dosen_id" required class="field">
+                                <select id="dosen-{{ $item->id }}" name="dosen_id" required class="field" x-data x-combobox>
                                     <option value="">Pilih dosen</option>
                                     @foreach ($dosenTersedia as $d)
                                         <option value="{{ $d->id }}" @selected((string) old('dosen_id') === (string) $d->id)>{{ $d->name }}{{ $d->dosen ? ' · ' . $d->dosen->program_studi : '' }}</option>

@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CariDaftarRequest;
+use App\Http\Requests\CariInformasiRequest;
 use App\Http\Requests\SimpanInformasiRequest;
+use App\Http\Resources\InformasiMitraResource;
 use App\Models\Beasiswa;
 use App\Models\Lomba;
 use App\Models\Magang;
+use App\Support\Daftar;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -19,24 +25,33 @@ class MitraInformasiController extends Controller
 {
     private const LABEL = ['magang' => 'Magang', 'lomba' => 'Lomba', 'beasiswa' => 'Beasiswa'];
 
-    public function index(Request $request, string $kategori): View
+    public function index(CariDaftarRequest $request, string $kategori): JsonResponse|Response
     {
         $model = $this->model($kategori);
         Gate::authorize('viewAny', $model);
+        $f = $request->validated();
 
-        // Hanya milik mitra ini. Terbaru di atas.
-        $items = $request->user()->{$kategori}()
-            ->withCount(['pendaftaran', 'pendaftaran as menunggu_count' => fn($q) => $q->where('status', 'menunggu')])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(10);
+        // Hanya milik mitra ini.
+        $query = $request->user()->{$kategori}()
+            ->withCount(['pendaftaran', 'pendaftaran as menunggu_count' => fn ($q) => $q->where('status', 'menunggu')])
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereLike('judul', "%{$v}%"));
 
-        return view('mitra.informasi.index', [
-            'kategori' => $kategori,
-            'label' => self::LABEL[$kategori],
-            'daftarKategori' => self::LABEL,
-            'items' => $items,
-        ]);
+        // Bawaan: terbaru di atas.
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 10);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'dibuat' => 'created_at',
+            'batas' => 'batas_pendaftaran',
+            'judul' => 'judul',
+            'pendaftar' => 'pendaftaran_count',
+        ], ['dibuat', 'desc']);
+
+        return Daftar::tanggapi(
+            $request,
+            InformasiMitraResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'mitra.informasi.index',
+            ['q' => $f['q'] ?? ''] + $urutan + ['per_halaman' => $perHalaman],
+            dataView: ['kategori' => $kategori, 'label' => self::LABEL[$kategori]],
+        );
     }
 
     public function create(string $kategori): View
@@ -102,7 +117,7 @@ class MitraInformasiController extends Controller
             'kategori' => $kategori,
             'label' => self::LABEL[$kategori],
             'item' => $item,
-            'daftarTingkat' => \App\Http\Requests\CariInformasiRequest::TINGKAT_LOMBA,
+            'daftarTingkat' => CariInformasiRequest::TINGKAT_LOMBA,
         ];
     }
 }

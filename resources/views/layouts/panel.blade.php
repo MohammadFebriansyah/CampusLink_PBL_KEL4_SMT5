@@ -1,46 +1,24 @@
 {{--
-    Layout panel admin dan mitra: bar atas tipis, sidebar kiri tetap di layar lebar (256 px),
-    drawer geser di layar sempit. Menu dipilih dari peran pengguna; item aktif dihitung dari nama route.
+    Layout panel mitra: bar atas tipis, sidebar kiri tetap di layar lebar (256 px),
+    drawer geser di layar sempit. Item aktif dihitung dari nama route.
+    Panel admin memakai layouts.admin.
 --}}
 @php
     $saya = auth()->user();
     $kategori = request()->route('kategori');
     $aktifInfo = fn (string $pola, string $k) => request()->routeIs($pola) && $kategori === $k;
 
-    if ($saya->role === \App\Models\User::ROLE_ADMIN) {
-        $mitraMenunggu = \App\Models\Mitra::where('status_verifikasi', \App\Models\Mitra::STATUS_PENDING)->count();
-        $grupMenu = [
-            'Ringkasan' => [
-                ['Dashboard', route('admin.dashboard'), request()->routeIs('admin.dashboard'), null],
-            ],
-            'Verifikasi' => [
-                ['Verifikasi mitra', route('admin.mitra.index'), request()->routeIs('admin.mitra.*'), $mitraMenunggu],
-                ['Pendaftar', route('admin.pendaftar.index'), request()->routeIs('admin.pendaftar.*'), null],
-            ],
-            'Pengguna' => [
-                ['Pengguna', route('admin.pengguna.index'), request()->routeIs('admin.pengguna.*'), null],
-            ],
-            'Konten' => [
-                ['Kelola magang', route('admin.informasi.index', 'magang'), $aktifInfo('admin.informasi.*', 'magang'), null],
-                ['Kelola lomba', route('admin.informasi.index', 'lomba'), $aktifInfo('admin.informasi.*', 'lomba'), null],
-                ['Kelola beasiswa', route('admin.informasi.index', 'beasiswa'), $aktifInfo('admin.informasi.*', 'beasiswa'), null],
-                ['Keahlian', route('admin.keahlian.index'), request()->routeIs('admin.keahlian.*'), null],
-            ],
-        ];
-        $namaPanel = 'Panel admin';
-    } else {
-        $grupMenu = [
-            '' => [
-                ['Dashboard', route('mitra.dashboard'), request()->routeIs('mitra.dashboard'), null],
-                ['Pendaftar', route('mitra.pendaftar.index'), request()->routeIs('mitra.pendaftar.*'), null],
-                ['Kelola magang', route('mitra.informasi.index', 'magang'), $aktifInfo('mitra.informasi.*', 'magang'), null],
-                ['Kelola lomba', route('mitra.informasi.index', 'lomba'), $aktifInfo('mitra.informasi.*', 'lomba'), null],
-                ['Kelola beasiswa', route('mitra.informasi.index', 'beasiswa'), $aktifInfo('mitra.informasi.*', 'beasiswa'), null],
-                ['Profil organisasi', route('mitra.profil.show'), request()->routeIs('mitra.profil.*'), null],
-            ],
-        ];
-        $namaPanel = 'Panel mitra';
-    }
+    $grupMenu = [
+        '' => [
+            ['Dashboard', route('mitra.dashboard'), request()->routeIs('mitra.dashboard'), null],
+            ['Pendaftar', route('mitra.pendaftar.index'), request()->routeIs('mitra.pendaftar.*'), null],
+            ['Kelola magang', route('mitra.informasi.index', 'magang'), $aktifInfo('mitra.informasi.*', 'magang'), null],
+            ['Kelola lomba', route('mitra.informasi.index', 'lomba'), $aktifInfo('mitra.informasi.*', 'lomba'), null],
+            ['Kelola beasiswa', route('mitra.informasi.index', 'beasiswa'), $aktifInfo('mitra.informasi.*', 'beasiswa'), null],
+            ['Profil organisasi', route('mitra.profil.show'), request()->routeIs('mitra.profil.*'), null],
+        ],
+    ];
+    $namaPanel = 'Panel mitra';
 @endphp
 <!DOCTYPE html>
 <html lang="id">

@@ -1,13 +1,13 @@
-@extends('layouts.panel')
+@extends('layouts.admin')
 
 @section('title', 'Ubah keahlian')
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Ubah keahlian', 'deskripsi' => $keahlian->nama, 'kembali' => [route('admin.keahlian.index'), 'Kembali ke daftar keahlian']])
+    <x-admin.page-header title="Ubah keahlian" :description="$keahlian->nama"
+                         :back="route('admin.keahlian.index')" back-label="Kembali ke daftar keahlian" />
 
-    <section class="bg-[#f7f8fc]">
-        <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-xl">
-        <form method="POST" action="{{ route('admin.keahlian.update', $keahlian->id) }}" class="space-y-5 rounded-2xl border border-fog bg-paper-white p-6 sm:p-8">
+    <x-admin.card class="max-w-xl">
+        <form method="POST" action="{{ route('admin.keahlian.update', $keahlian->id) }}" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -18,12 +18,10 @@
                 'hint' => $keahlian->pengguna_count > 0 ? 'Dipakai ' . $keahlian->pengguna_count . ' pengguna. Nama baru ikut berlaku di profil mereka.' : null,
             ])
 
-            <div class="flex justify-end gap-2">
-                <a href="{{ route('admin.keahlian.index') }}" class="btn btn-ghost">Batal</a>
-                <button type="submit" class="btn btn-primary px-8 py-3">Simpan</button>
+            <div class="flex justify-end gap-2 border-t border-border pt-5">
+                <x-admin.button variant="ghost" :href="route('admin.keahlian.index')">Batal</x-admin.button>
+                <x-admin.button type="submit">Simpan</x-admin.button>
             </div>
         </form>
-        </div>
-        </div>
-    </section>
+    </x-admin.card>
 @endsection

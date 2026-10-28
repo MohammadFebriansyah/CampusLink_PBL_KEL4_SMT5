@@ -15,7 +15,7 @@
            class="field @error($name) border-ember @enderror">
 
     @if (! empty($hint))
-        <p class="mt-1.5 text-caption text-graphite">{{ $hint }}</p>
+        <p class="mt-1.5 text-caption text-graphite dark:text-muted-foreground">{{ $hint }}</p>
     @endif
 
     @error($name)

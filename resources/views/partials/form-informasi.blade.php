@@ -55,11 +55,11 @@
                 'internal' => ['Kegiatan kampus', 'Mahasiswa mendaftar di CampusLink dengan CV. Admin yang menerima atau menolak.'],
                 'eksternal' => ['Kegiatan luar kampus', 'Tombol daftar membuka situs penyelenggara. Tidak ada terima/tolak di CampusLink.'],
             ] as $nilai => [$judul, $teksPilihan])
-                <label class="flex cursor-pointer gap-3 rounded-2xl border border-fog p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-carbon">
+                <label class="flex cursor-pointer gap-3 rounded-2xl border border-fog p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-carbon dark:border-border dark:has-[:checked]:border-accent dark:has-[:checked]:bg-accent/10 dark:has-[:focus-visible]:outline-ring">
                     <input type="radio" name="cara_daftar" value="{{ $nilai }}" x-model="cara" class="mt-1 size-4 accent-[#c2410c]" @checked($cara === $nilai)>
                     <span>
                         <span class="block font-semibold">{{ $judul }}</span>
-                        <span class="mt-0.5 block text-sm text-graphite">{{ $teksPilihan }}</span>
+                        <span class="mt-0.5 block text-sm text-graphite dark:text-muted-foreground">{{ $teksPilihan }}</span>
                     </span>
                 </label>
             @endforeach
@@ -77,7 +77,7 @@
                    :required="cara === 'eksternal'"
                    @error('tautan_pendaftaran') aria-invalid="true" @enderror
                    class="field @error('tautan_pendaftaran') border-ember @enderror">
-            <p class="mt-1.5 text-caption text-graphite">
+            <p class="mt-1.5 text-caption text-graphite dark:text-muted-foreground">
                 <span x-show="cara === 'eksternal'">Pembaca diarahkan ke tautan ini untuk mendaftar. Diawali http:// atau https://</span>
                 <span x-show="cara === 'internal'" x-cloak>Boleh dikosongkan. Bila diisi, tampil sebagai tautan informasi tambahan.</span>
             </p>

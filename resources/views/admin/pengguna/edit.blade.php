@@ -1,13 +1,13 @@
-@extends('layouts.panel')
+@extends('layouts.admin')
 
 @section('title', 'Ubah data ' . $user->name)
 
 @section('content')
-    @include('admin._kepala', ['judul' => 'Ubah data pengguna', 'deskripsi' => $user->name, 'kembali' => [route('admin.pengguna.show', $user->id), 'Kembali ke ' . $user->name]])
+    <x-admin.page-header title="Ubah data pengguna" :description="$user->name"
+                         :back="route('admin.pengguna.show', $user->id)" :back-label="'Kembali ke ' . $user->name" />
 
-    <section class="bg-[#f7f8fc]">
-        <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-xl">
-        <form method="POST" action="{{ route('admin.pengguna.update', $user->id) }}" class="space-y-5 rounded-2xl border border-fog bg-paper-white p-6 sm:p-8">
+    <x-admin.card class="max-w-xl">
+        <form method="POST" action="{{ route('admin.pengguna.update', $user->id) }}" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -21,18 +21,17 @@
             @endif
 
             @if ($user->terverifikasiGoogle())
-                <p class="rounded-xl bg-accent-wash p-4 text-sm text-carbon">
-                    Akun ini terverifikasi Google. Bila email diubah, verifikasi dibatalkan dan pengguna perlu
-                    masuk dengan Google memakai email yang baru.
+                <p class="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 p-4 text-sm dark:border-amber-400/25 dark:bg-amber-500/10">
+                    <x-admin.icon name="alert" class="mt-0.5 size-4 text-amber-700 dark:text-amber-300" />
+                    <span>Akun ini terverifikasi Google. Bila email diubah, verifikasi dibatalkan dan pengguna perlu
+                    masuk dengan Google memakai email yang baru.</span>
                 </p>
             @endif
 
-            <div class="flex justify-end gap-2">
-                <a href="{{ route('admin.pengguna.show', $user->id) }}" class="btn btn-ghost">Batal</a>
-                <button type="submit" class="btn btn-primary px-8 py-3">Simpan</button>
+            <div class="flex justify-end gap-2 border-t border-border pt-5">
+                <x-admin.button variant="ghost" :href="route('admin.pengguna.show', $user->id)">Batal</x-admin.button>
+                <x-admin.button type="submit">Simpan</x-admin.button>
             </div>
         </form>
-        </div>
-        </div>
-    </section>
+    </x-admin.card>
 @endsection

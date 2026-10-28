@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CariInformasiRequest;
+use App\Http\Resources\InformasiResource;
 use App\Models\Beasiswa;
 use App\Models\Lomba;
 use App\Models\Magang;
 use App\Models\User;
+use App\Support\Daftar;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -35,7 +39,7 @@ class InformasiController extends Controller
         ],
     ];
 
-    public function index(CariInformasiRequest $request, string $kategori): View
+    public function index(CariInformasiRequest $request, string $kategori): JsonResponse|Response
     {
         $meta = self::KATEGORI[$kategori] ?? abort(404);
         $model = $meta['model'];
@@ -43,7 +47,7 @@ class InformasiController extends Controller
         $kata = trim((string) $request->validated('q', ''));
         $tingkat = $request->validated('tingkat');
 
-        $items = $model::query()
+        $query = $model::query()
             ->where('status', $model::STATUS_TAYANG)
             // Hanya yang masih dibuka. Yang sudah lewat tetap bisa dibuka lewat tautan langsung.
             ->where('batas_pendaftaran', '>=', today()->toDateString())
@@ -55,26 +59,39 @@ class InformasiController extends Controller
                     }
                 });
             })
-            ->when($kategori === 'lomba' && $tingkat, fn($query) => $query->where('tingkat', $tingkat))
-            ->orderBy('batas_pendaftaran')
-            ->orderBy('id')
-            ->paginate(10)
-            ->withQueryString();
+            ->when($kategori === 'lomba' && $tingkat, fn ($query) => $query->where('tingkat', $tingkat));
 
+        // Bawaan: batas pendaftaran terdekat lebih dulu.
+        $urutan = Urutan::terapkan($query, $request->validated('urut'), $request->validated('arah'), [
+            'batas' => 'batas_pendaftaran',
+            'terbaru' => 'created_at',
+            'judul' => 'judul',
+        ], ['batas', 'asc']);
+
+        $perHalaman = Daftar::perHalaman($request->validated('per_halaman'), 10);
+        $items = $query->paginate($perHalaman)->withQueryString();
+        $filter = ['q' => $kata] + ($kategori === 'lomba' ? ['tingkat' => $tingkat ?? ''] : []) + $urutan + ['per_halaman' => $perHalaman];
+
+        // Panel detail hanya ada di kunjungan halaman; permintaan JSON cukup berisi daftar.
         // Informasi yang dibuka di panel samping (layar lebar): pilihan dari ?pilih bila ada di halaman ini,
         // selain itu yang pertama. Di HP panel tidak tampil; kartu membuka halaman detail.
-        $terpilih = $items->firstWhere('id', (int) $request->validated('pilih')) ?? $items->first();
+        $terpilih = $request->wantsJson() ? null : ($items->firstWhere('id', (int) $request->validated('pilih')) ?? $items->first());
 
-        return view('informasi.index', [
-            'kategori' => $kategori,
-            'daftarKategori' => array_map(fn($m) => $m['label'], self::KATEGORI),
-            'label' => $meta['label'],
-            'items' => $items,
-            'kata' => $kata,
-            'tingkat' => $tingkat,
-            'daftarTingkat' => CariInformasiRequest::TINGKAT_LOMBA,
-            'detail' => $terpilih ? $this->dataDetail($kategori, $meta, $terpilih) : null,
-        ]);
+        return Daftar::tanggapi(
+            $request,
+            InformasiResource::collection($items),
+            'informasi.index',
+            $filter,
+            dataView: [
+                'kategori' => $kategori,
+                'daftarKategori' => array_map(fn ($m) => $m['label'], self::KATEGORI),
+                'label' => $meta['label'],
+                'kata' => $kata,
+                'tingkat' => $tingkat,
+                'daftarTingkat' => CariInformasiRequest::TINGKAT_LOMBA,
+                'detail' => $terpilih ? $this->dataDetail($kategori, $meta, $terpilih) : null,
+            ],
+        );
     }
 
     // Urutan argumen mengikuti urutan parameter route: {id} dari URI lebih dulu, lalu 'kategori' dari defaults().

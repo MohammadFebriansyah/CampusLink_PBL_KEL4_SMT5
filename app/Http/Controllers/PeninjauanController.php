@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CariDaftarRequest;
+use App\Http\Resources\PendaftarResource;
 use App\Models\Beasiswa;
 use App\Models\Lomba;
 use App\Models\Magang;
 use App\Models\Pendaftaran;
 use App\Models\User;
+use App\Support\Daftar;
 use App\Support\Informasi;
+use App\Support\Urutan;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
@@ -19,29 +25,36 @@ use Illuminate\View\View;
  */
 class PeninjauanController extends Controller
 {
-    public function index(Request $request): View
+    public function index(CariDaftarRequest $request): JsonResponse|Response
     {
         $user = $request->user();
-        $status = $request->query('status', Pendaftaran::STATUS_MENUNGGU);
-        $status = array_key_exists($status, Pendaftaran::LABEL_STATUS) ? $status : Pendaftaran::STATUS_MENUNGGU;
+        $f = $request->validated();
+        $status = array_key_exists($f['status'] ?? '', Pendaftaran::LABEL_STATUS) ? $f['status'] : Pendaftaran::STATUS_MENUNGGU;
 
         $semua = $this->milikPeninjau($user);
 
         $jumlah = (clone $semua)->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
 
-        $daftar = (clone $semua)
+        $query = (clone $semua)
             ->with(['informasi', 'user.mahasiswa'])
             ->where('status', $status)
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHas(
+                'user', fn ($u) => $u->whereLike('name', "%{$v}%")->orWhereLike('email', "%{$v}%")
+            ));
 
-        return view('peninjauan.index', [
-            'panel' => $this->panel($request),
-            'status' => $status,
-            'jumlah' => $jumlah,
-            'daftar' => $daftar,
-        ]);
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'mendaftar' => 'created_at',
+        ], ['mendaftar', 'desc']);
+
+        return Daftar::tanggapi(
+            $request,
+            PendaftarResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'peninjauan.index',
+            ['q' => $f['q'] ?? '', 'status' => $status] + $urutan + ['per_halaman' => $perHalaman],
+            tambahan: ['jumlah' => $jumlah],
+            dataView: ['panel' => $this->panel($request), 'jumlah' => $jumlah],
+        );
     }
 
     public function show(Request $request, string $id): View
@@ -90,7 +103,7 @@ class PeninjauanController extends Controller
         return Pendaftaran::query()->whereHasMorph(
             'informasi',
             [Magang::class, Lomba::class, Beasiswa::class],
-            fn(Builder $q) => Informasi::batasiPeninjau($q, $user),
+            fn (Builder $q) => Informasi::batasiPeninjau($q, $user),
         );
     }
 

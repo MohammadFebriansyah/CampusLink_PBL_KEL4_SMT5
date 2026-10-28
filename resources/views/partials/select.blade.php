@@ -3,7 +3,7 @@
 --}}
 <div>
     <label for="{{ $name }}" class="mb-2 block text-sm font-medium">{{ $label }}</label>
-    <select id="{{ $name }}" name="{{ $name }}" required
+    <select id="{{ $name }}" name="{{ $name }}" required x-data x-combobox
             @error($name) aria-invalid="true" aria-describedby="{{ $name }}-galat" @enderror
             class="field @error($name) border-ember @enderror">
         <option value="" disabled @selected(empty(old($name, $nilai ?? null)))>{{ $placeholder ?? 'Pilih' }}</option>
@@ -13,7 +13,7 @@
     </select>
 
     @if (! empty($hint))
-        <p class="mt-1.5 text-caption text-graphite">{{ $hint }}</p>
+        <p class="mt-1.5 text-caption text-graphite dark:text-muted-foreground">{{ $hint }}</p>
     @endif
 
     @error($name)

@@ -1,19 +1,16 @@
-@extends('layouts.panel')
+@extends('layouts.admin')
 
 @section('title', ($item ? 'Ubah ' : 'Tambah ') . mb_strtolower($label))
 
 @section('content')
-    @include('admin._kepala', [
-        'judul' => ($item ? 'Ubah' : 'Tambah') . ' informasi ' . mb_strtolower($label),
-        'deskripsi' => $item?->judul,
-        'kembali' => [route('admin.informasi.index', $kategori), 'Kembali ke daftar ' . mb_strtolower($label)],
-    ])
+    <x-admin.page-header :title="($item ? 'Ubah' : 'Tambah') . ' informasi ' . mb_strtolower($label)"
+                         :description="$item?->judul"
+                         :back="route('admin.informasi.index', $kategori)" :back-label="'Kembali ke daftar ' . mb_strtolower($label)" />
 
-    <section class="bg-[#f7f8fc]">
-        <div class="mx-auto max-w-page px-4 py-8 sm:px-6 md:py-10"><div class="max-w-3xl">
+    <x-admin.card class="max-w-3xl">
         <form method="POST"
               action="{{ $item ? route('admin.informasi.update', [$kategori, $item->id]) : route('admin.informasi.store', $kategori) }}"
-              class="space-y-5 rounded-2xl border border-fog bg-paper-white p-6 sm:p-8">
+              class="space-y-5">
             @csrf
             @if ($item)
                 @method('PUT')
@@ -22,12 +19,10 @@
             @include('partials.field', ['name' => 'penyelenggara', 'label' => 'Penyelenggara', 'hint' => 'Nama pihak yang menyelenggarakan, tampil kepada pembaca.', 'nilai' => $item?->penyelenggara])
             @include('partials.form-informasi', ['kategori' => $kategori, 'item' => $item, 'daftarTingkat' => $daftarTingkat, 'admin' => true])
 
-            <div class="flex justify-end gap-2">
-                <a href="{{ route('admin.informasi.index', $kategori) }}" class="btn btn-ghost">Batal</a>
-                <button type="submit" class="btn btn-primary px-8 py-3">{{ $item ? 'Simpan perubahan' : 'Tayangkan' }}</button>
+            <div class="flex justify-end gap-2 border-t border-border pt-5">
+                <x-admin.button variant="ghost" :href="route('admin.informasi.index', $kategori)">Batal</x-admin.button>
+                <x-admin.button type="submit">{{ $item ? 'Simpan perubahan' : 'Tayangkan' }}</x-admin.button>
             </div>
         </form>
-        </div>
-        </div>
-    </section>
+    </x-admin.card>
 @endsection

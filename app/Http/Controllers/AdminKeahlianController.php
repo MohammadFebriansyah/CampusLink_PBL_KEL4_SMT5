@@ -2,19 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CariDaftarRequest;
 use App\Http\Requests\SimpanKeahlianRequest;
+use App\Http\Resources\KeahlianResource;
 use App\Models\Keahlian;
+use App\Support\Daftar;
+use App\Support\Urutan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /** Daftar bidang keahlian yang bisa dipilih pengguna (data master). */
 class AdminKeahlianController extends Controller
 {
-    public function index(): View
+    public function index(CariDaftarRequest $request): JsonResponse|Response
     {
-        return view('admin.keahlian.index', [
-            'daftar' => Keahlian::withCount('pengguna')->orderBy('nama')->get(),
-        ]);
+        $f = $request->validated();
+
+        $query = Keahlian::withCount('pengguna')
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereLike('nama', "%{$v}%"));
+
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 20);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'nama' => 'nama',
+            'dipakai' => 'pengguna_count',
+        ], ['nama', 'asc']);
+
+        return Daftar::tanggapi(
+            $request,
+            KeahlianResource::collection($query->paginate($perHalaman)->withQueryString()),
+            'admin.keahlian.index',
+            ['q' => $f['q'] ?? ''] + $urutan + ['per_halaman' => $perHalaman],
+        );
     }
 
     public function store(SimpanKeahlianRequest $request): RedirectResponse

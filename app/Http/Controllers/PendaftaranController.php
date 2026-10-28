@@ -2,38 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CariDaftarRequest;
+use App\Http\Resources\BimbinganSayaResource;
+use App\Http\Resources\PendaftaranSayaResource;
 use App\Models\Pendaftaran;
+use App\Support\Daftar;
 use App\Support\Informasi;
+use App\Support\StatusPeninjauan;
+use App\Support\Urutan;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /** Pendaftaran oleh mahasiswa: daftar dengan CV, batal, dan halaman "Kegiatan saya". */
 class PendaftaranController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * Kegiatan saya: pendaftaran dan permintaan bimbingan milik mahasiswa, dipilih lewat ?bagian=.
+     * Pencarian mencocokkan judul kegiatan (dan nama dosen untuk bimbingan).
+     */
+    public function index(CariDaftarRequest $request): JsonResponse|Response
     {
         $user = $request->user();
-        $pendaftaran = $user->pendaftaran()->with('informasi')->latest()->get();
-        $bimbingan = $user->bimbinganDiajukan()->with(['informasi', 'dosen'])->latest()->get();
+        $f = $request->validated();
+        $bagian = $f['bagian'] ?? 'pendaftaran';
+        $status = array_key_exists($f['status'] ?? '', StatusPeninjauan::LABEL) ? $f['status'] : '';
+        $judulCocok = fn (string $v) => fn (Builder $q) => $q->whereLike('judul', "%{$v}%");
+
+        $query = $bagian === 'bimbingan'
+            ? $user->bimbinganDiajukan()->with(['informasi', 'dosen'])
+                ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($q) => $q
+                    ->whereHasMorph('informasi', array_values(Informasi::MODEL), $judulCocok($v))
+                    ->orWhereHas('dosen', fn ($d) => $d->whereLike('name', "%{$v}%"))))
+            : $user->pendaftaran()->with('informasi')
+                ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHasMorph('informasi', array_values(Informasi::MODEL), $judulCocok($v)));
+        $query->when($status, fn ($q, $v) => $q->where('status', $v));
+
+        $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 10);
+        $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [
+            'dikirim' => 'created_at',
+        ], ['dikirim', 'desc']);
+
+        $items = $query->paginate($perHalaman)->withQueryString();
+        $resource = $bagian === 'bimbingan' ? BimbinganSayaResource::class : PendaftaranSayaResource::class;
+
+        $tambahan = [
+            'jumlah_bagian' => ['pendaftaran' => $user->pendaftaran()->count(), 'bimbingan' => $user->bimbinganDiajukan()->count()],
+            'jumlah_status' => $user->pendaftaran()->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status'),
+        ];
 
         // Kegiatan yang detailnya dibuka di panel samping (layar lebar): dari ?pilih=magang-3 bila
-        // masih bisa dibuka, selain itu kegiatan pertama di daftar. Yang disembunyikan admin dilewati.
-        $bisaDibuka = $pendaftaran->pluck('informasi')->merge($bimbingan->pluck('informasi'))
-            ->filter(fn($i) => $i && $i->status === 'tayang')
-            ->keyBy(fn($i) => $i->kategori() . '-' . $i->id);
-        $terpilih = $bisaDibuka->get((string) $request->query('pilih')) ?? $bisaDibuka->first();
-
-        return view('kegiatan.index', [
-            'pendaftaran' => $pendaftaran,
-            'bimbingan' => $bimbingan,
-            'bisaDibuka' => $bisaDibuka->keys()->all(),
-            'detail' => $terpilih
+        // ada di halaman ini dan masih bisa dibuka, selain itu yang pertama. Yang disembunyikan admin dilewati.
+        $detail = null;
+        if (! $request->wantsJson()) {
+            $bisaDibuka = $items->getCollection()->pluck('informasi')
+                ->filter(fn ($i) => $i && $i->status === 'tayang')
+                ->keyBy(fn ($i) => $i->kategori().'-'.$i->id);
+            $terpilih = $bisaDibuka->get((string) $request->query('pilih')) ?? $bisaDibuka->first();
+            $detail = $terpilih
                 ? app(InformasiController::class)->dataDetail($terpilih->kategori(), ['label' => Informasi::LABEL[$terpilih->kategori()]], $terpilih)
-                : null,
-        ]);
+                : null;
+        }
+
+        return Daftar::tanggapi(
+            $request,
+            $resource::collection($items),
+            'kegiatan.index',
+            ['q' => $f['q'] ?? '', 'bagian' => $bagian, 'status' => $status] + $urutan + ['per_halaman' => $perHalaman],
+            tambahan: $tambahan,
+            dataView: ['detail' => $detail, 'jumlahStatus' => $tambahan['jumlah_status']],
+        );
     }
 
     public function store(Request $request, string $kategori, string $id): RedirectResponse
@@ -98,7 +140,7 @@ class PendaftaranController extends Controller
         $disk = Storage::disk('local');
         abort_unless($disk->exists($pendaftaran->cv), 404);
 
-        $nama = 'CV ' . preg_replace('/[^A-Za-z0-9 ._-]/', '', $pendaftaran->user->name) . '.pdf';
+        $nama = 'CV '.preg_replace('/[^A-Za-z0-9 ._-]/', '', $pendaftaran->user->name).'.pdf';
 
         return response()->download($disk->path($pendaftaran->cv), $nama, [
             'Content-Type' => 'application/pdf',

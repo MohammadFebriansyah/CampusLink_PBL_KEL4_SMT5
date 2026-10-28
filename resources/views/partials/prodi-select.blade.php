@@ -5,7 +5,7 @@
 --}}
 <div>
     <label for="program_studi" class="mb-2 block text-sm font-medium">Program studi</label>
-    <select id="program_studi" name="program_studi" required
+    <select id="program_studi" name="program_studi" required x-data x-combobox
             @error('program_studi') aria-invalid="true" aria-describedby="program_studi-galat" @enderror
             class="field @error('program_studi') border-ember @enderror">
         <option value="" disabled @selected(empty(old('program_studi', $nilai ?? null)))>Pilih program studi</option>
