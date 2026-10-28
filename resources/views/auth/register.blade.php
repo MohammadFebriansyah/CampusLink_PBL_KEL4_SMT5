@@ -21,7 +21,7 @@
                 @if ($peran === 'mitra')
                     Boleh memakai Gmail. Akun menunggu verifikasi admin.
                 @else
-                    Akun @polinema.ac.id. Email Anda langsung terverifikasi oleh Google.
+                    Akun {{ \App\Support\Kampus::labelDomain($peran) }}. Email Anda langsung terverifikasi oleh Google.
                 @endif
             </p>
 
@@ -50,7 +50,7 @@
                     'label' => 'Email',
                     'type' => 'email',
                     'autocomplete' => 'email',
-                    'hint' => $peran === 'mitra' ? 'Boleh memakai email apa saja.' : 'Wajib memakai email @polinema.ac.id.',
+                    'hint' => $peran === 'mitra' ? 'Boleh memakai email apa saja.' : 'Wajib memakai email ' . \App\Support\Kampus::labelDomain($peran) . '.',
                 ])
 
                 @if ($peran === 'mahasiswa')

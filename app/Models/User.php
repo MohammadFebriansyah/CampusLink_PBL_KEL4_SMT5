@@ -14,11 +14,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_MAHASISWA = 'mahasiswa';
+
     public const ROLE_DOSEN = 'dosen';
+
     public const ROLE_MITRA = 'mitra';
 
     public const STATUS_AKTIF = 'aktif';
+
     public const STATUS_NONAKTIF = 'nonaktif';
 
     // Jangan pernah mengisi dari $request->all(). Pakai hasil validasi FormRequest.
@@ -38,8 +42,15 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /** Email terbukti milik pengguna (OTP pendaftaran benar atau diverifikasi Google). */
+    public function emailTerverifikasi(): bool
+    {
+        return $this->email_verified_at !== null;
     }
 
     /**
@@ -51,6 +62,10 @@ class User extends Authenticatable
     {
         if ($this->status !== self::STATUS_AKTIF) {
             return 'Akun ini dinonaktifkan. Hubungi admin CampusLink.';
+        }
+
+        if (! $this->emailTerverifikasi()) {
+            return 'Email akun ini belum diverifikasi. Masuk dengan Google memakai email yang sama, atau hubungi admin CampusLink.';
         }
 
         if ($this->role === self::ROLE_MITRA) {

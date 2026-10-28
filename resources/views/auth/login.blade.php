@@ -9,7 +9,7 @@
 
         <div class="card mt-8 space-y-5 p-6 sm:p-8">
             <a href="{{ route('google.redirect') }}" class="btn w-full border border-fog bg-paper-white py-3 hover:bg-mist">Masuk dengan Google</a>
-            <p class="text-center text-caption text-graphite">Mahasiswa dan dosen wajib memakai @polinema.ac.id, mitra boleh memakai Gmail.</p>
+            <p class="text-center text-caption text-graphite">Mahasiswa wajib memakai {{ \App\Support\Kampus::labelDomain('mahasiswa') }}, dosen {{ \App\Support\Kampus::labelDomain('dosen') }}, mitra boleh memakai Gmail.</p>
 
             <div class="flex items-center gap-3 text-caption text-ash" aria-hidden="true">
                 <span class="h-px flex-1 bg-fog"></span>

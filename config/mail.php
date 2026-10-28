@@ -45,7 +45,9 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Batas waktu koneksi SMTP (detik). Kode OTP dikirim saat formulir dikirim, jadi server email
+            // yang tidak menjawab harus cepat gagal dan ditampilkan sebagai galat, bukan membuat halaman menggantung.
+            'timeout' => env('MAIL_TIMEOUT', 10),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

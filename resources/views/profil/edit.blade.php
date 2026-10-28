@@ -70,7 +70,7 @@
                     <div class="max-w-lg">
                         <h2 class="font-semibold">Akun belum terverifikasi</h2>
                         <p class="mt-1 text-sm text-graphite">
-                            Verifikasi dengan akun Google @polinema.ac.id untuk membuktikan email ini milik Anda.
+                            Verifikasi dengan akun Google {{ \App\Support\Kampus::labelDomain($user->role) }} untuk membuktikan email ini milik Anda.
                             Profil terverifikasi akan ditandai di direktori.
                         </p>
                     </div>

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Beasiswa;
 use App\Models\Keahlian;
 use App\Models\Lomba;
 use App\Models\Magang;
@@ -17,6 +16,7 @@ class AdminTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private int $urutan = 0;
 
     protected function setUp(): void
@@ -307,19 +307,19 @@ class AdminTest extends TestCase
 
     public function test_admin_mengubah_email_dan_nim_mahasiswa(): void
     {
-        $mhs = $this->buatMahasiswa(['email' => 'lama@polinema.ac.id']);
+        $mhs = $this->buatMahasiswa(['email' => 'lama@student.polinema.ac.id']);
 
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'BARU@Polinema.ac.id', 'nim' => '2441079999'])
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'BARU@Student.Polinema.ac.id', 'nim' => '2441079999'])
             ->assertRedirect(route('admin.pengguna.show', $mhs->id));
 
-        $this->assertSame('baru@polinema.ac.id', $mhs->fresh()->email);        // huruf kecil
+        $this->assertSame('baru@student.polinema.ac.id', $mhs->fresh()->email);        // huruf kecil
         $this->assertDatabaseHas('mahasiswa', ['user_id' => $mhs->id, 'nim' => '2441079999']);
     }
 
     public function test_aturan_ubah_data_pengguna(): void
     {
-        $a = $this->buatMahasiswa(['email' => 'a@polinema.ac.id'], ['nim' => 'NIM-A']);
-        $b = $this->buatMahasiswa(['email' => 'b@polinema.ac.id'], ['nim' => 'NIM-B']);
+        $a = $this->buatMahasiswa(['email' => 'a@student.polinema.ac.id'], ['nim' => 'NIM-A']);
+        $b = $this->buatMahasiswa(['email' => 'b@student.polinema.ac.id'], ['nim' => 'NIM-B']);
         $dosen = $this->buatDosen(['email' => 'd@polinema.ac.id']);
         $mitra = $this->buatMitra(Mitra::STATUS_DISETUJUI, ['email' => 'm@contoh.example']);
 
@@ -328,11 +328,11 @@ class AdminTest extends TestCase
         $this->sebagaiAdmin()->put(route('admin.pengguna.update', $dosen->id), ['email' => 'd@gmail.com', 'nidn' => 'X1'])->assertSessionHasErrors('email');
 
         // Email dan NIM harus unik terhadap pengguna lain.
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'b@polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasErrors('email');
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@polinema.ac.id', 'nim' => 'NIM-B'])->assertSessionHasErrors('nim');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'b@student.polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasErrors('email');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => 'NIM-B'])->assertSessionHasErrors('nim');
 
         // Tidak mengubah apa pun (email dan NIM sendiri) tetap valid.
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasNoErrors();
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasNoErrors();
 
         // Mitra bebas memakai email apa saja.
         $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mitra->id), ['email' => 'baru@gmail.com'])->assertSessionHasNoErrors();
@@ -341,14 +341,14 @@ class AdminTest extends TestCase
 
     public function test_mengubah_email_membatalkan_verifikasi_google_tetapi_email_sama_tidak(): void
     {
-        $mhs = $this->buatMahasiswa(['email' => 'lama@polinema.ac.id']);
+        $mhs = $this->buatMahasiswa(['email' => 'lama@student.polinema.ac.id']);
         $mhs->google_id = 'g-1';
         $mhs->save();
 
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'lama@polinema.ac.id', 'nim' => 'NIMBARU']);
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'lama@student.polinema.ac.id', 'nim' => 'NIMBARU']);
         $this->assertTrue($mhs->fresh()->terverifikasiGoogle());
 
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'baru@polinema.ac.id', 'nim' => 'NIMBARU']);
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'baru@student.polinema.ac.id', 'nim' => 'NIMBARU']);
         $this->assertFalse($mhs->fresh()->terverifikasiGoogle());
     }
 

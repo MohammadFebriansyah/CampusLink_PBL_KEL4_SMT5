@@ -6,15 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GoogleRegisterRequest;
 use App\Models\User;
 use App\Support\Kampus;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Socialite\Contracts\User as GoogleUser;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 /**
  * Masuk dan daftar dengan akun Google.
@@ -45,7 +46,7 @@ class GoogleController extends Controller
             $param['hd'] = $domain[0];
         }
 
-        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        /** @var AbstractProvider $driver */
         $driver = Socialite::driver('google');
 
         return $driver->with($param)->redirect();
@@ -98,7 +99,7 @@ class GoogleController extends Controller
         return view('auth.google-lengkapi', compact('peran', 'pending'));
     }
 
-    public function simpan(GoogleRegisterRequest $request): RedirectResponse
+    public function simpan(GoogleRegisterRequest $request, CreatesNewUsers $pembuatAkun): RedirectResponse
     {
         $pending = $this->pending($request);
 
@@ -134,31 +135,10 @@ class GoogleController extends Controller
             $data['jurusan'] = Kampus::jurusanDariProdi($data['program_studi']);
         }
 
-        $user = DB::transaction(function () use ($pending, $data) {
-            // Tanpa password: akun ini hanya bisa masuk lewat Google.
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $pending['email'],
-                'role' => $data['peran'],
-            ]);
-            $user->google_id = $pending['google_id'];
-            $user->save();
-
-            match ($data['peran']) {
-                User::ROLE_MAHASISWA => $user->mahasiswa()->create(
-                    Arr::only($data, ['nim', 'kelas', 'jurusan', 'program_studi', 'angkatan'])
-                ),
-                User::ROLE_DOSEN => $user->dosen()->create(
-                    Arr::only($data, ['nidn', 'jurusan', 'program_studi'])
-                ),
-                User::ROLE_MITRA => $user->mitra()->create(
-                    Arr::only($data, ['nama_organisasi', 'kontak'])
-                ), // status_verifikasi otomatis "pending"
-                default => throw new \LogicException('Peran pendaftaran tidak valid.'),
-            };
-
-            return $user;
-        });
+        // Email dan google_id dari sesi (hasil callback Google), tidak pernah dari formulir.
+        // Tanpa password: akun ini hanya bisa masuk lewat Google.
+        $user = $pembuatAkun->create(['email' => $pending['email'], 'google_id' => $pending['google_id'], 'password' => null] + $data);
+        event(new Registered($user));
 
         $request->session()->forget(['google_pending', 'google_peran']);
 
@@ -192,12 +172,11 @@ class GoogleController extends Controller
      */
     private function akunKampusValid(GoogleUser $google): bool
     {
-        $domains = array_map(fn($d) => Str::lower($d), Kampus::semuaDomainEmail());
+        $domains = array_map(fn ($d) => Str::lower($d), Kampus::semuaDomainEmail());
         $raw = $google->user ?? [];
-        $email = Str::lower((string) $google->getEmail());
 
         $emailTerverifikasi = filter_var($raw['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $emailKampus = collect($domains)->contains(fn($d) => str_ends_with($email, '@' . $d));
+        $emailKampus = Kampus::emailKampus((string) $google->getEmail());
         $hdKampus = in_array(Str::lower((string) ($raw['hd'] ?? '')), $domains, true);
 
         if (config('kampus.google_wajib_hd') === false) {
@@ -220,7 +199,7 @@ class GoogleController extends Controller
             }
 
             // Harus SEBELUM menautkan: penautan menghapus kata sandi lama.
-            if ($user && in_array($user->role, [User::ROLE_MAHASISWA, User::ROLE_DOSEN], true) && ! $kampus) {
+            if ($user && ! $this->domainBolehUntuk($user, $email, $kampus)) {
                 return $this->gagal($this->pesanDomain($user->role));
             }
 
@@ -232,6 +211,7 @@ class GoogleController extends Controller
                     'google_id' => $google->getId(),
                     'password' => null,
                     'remember_token' => null,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
                 ]);
                 $user->refresh();
             }
@@ -272,7 +252,7 @@ class GoogleController extends Controller
             return $this->gagal('Akun Google harus memakai email yang sama dengan akun CampusLink Anda.');
         }
 
-        if (in_array($user->role, [User::ROLE_MAHASISWA, User::ROLE_DOSEN], true) && ! $kampus) {
+        if (! $this->domainBolehUntuk($user, (string) $google->getEmail(), $kampus)) {
             return $this->gagal($this->pesanDomain($user->role));
         }
 
@@ -282,9 +262,26 @@ class GoogleController extends Controller
             return $this->gagal('Akun Google ini sudah terhubung ke akun CampusLink lain.');
         }
 
-        User::whereKey($user->id)->update(['google_id' => $google->getId()]);
+        User::whereKey($user->id)->update([
+            'google_id' => $google->getId(),
+            'email_verified_at' => $user->email_verified_at ?? now(),
+        ]);
 
         return redirect()->route('profil.show')->with('status', 'Akun Anda kini terverifikasi dengan Google.');
+    }
+
+    /**
+     * Mahasiswa dan dosen hanya boleh menautkan akun Google kampus (lihat akunKampusValid) yang domain emailnya
+     * persis milik perannya: @student.polinema.ac.id untuk mahasiswa, @polinema.ac.id untuk dosen.
+     * Mitra boleh akun Google apa saja.
+     */
+    private function domainBolehUntuk(User $user, string $email, bool $kampus): bool
+    {
+        if (! in_array($user->role, [User::ROLE_MAHASISWA, User::ROLE_DOSEN], true)) {
+            return true;
+        }
+
+        return $kampus && Kampus::emailSesuaiPeran($email, $user->role);
     }
 
     private function pending(Request $request): ?array
@@ -302,7 +299,7 @@ class GoogleController extends Controller
 
     private function pesanDomain(string $peran): string
     {
-        return ucfirst($peran) . ' wajib memakai akun Google ' . Kampus::labelDomain($peran) . '.';
+        return ucfirst($peran).' wajib memakai akun Google '.Kampus::labelDomain($peran).'.';
     }
 
     private function gagal(string $pesan): RedirectResponse

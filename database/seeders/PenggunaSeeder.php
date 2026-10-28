@@ -29,17 +29,20 @@ class PenggunaSeeder extends Seeder
         $this->seedMahasiswa($password);
         $this->seedDosen($password);
         $this->seedMitra($password);
+
+        // Akun contoh dianggap sudah lolos verifikasi email (akun tanpa ini tidak bisa masuk).
+        User::query()->whereNull('email_verified_at')->update(['email_verified_at' => now()]);
     }
 
     private function seedMahasiswa(string $password): void
     {
         $data = [
-            ['Alya Putri Ramadhani', 'alya.putri@polinema.ac.id', '2441079001', 'SIB-3A', 'Teknologi Informasi', 'Sistem Informasi Bisnis', 2024, ['Web Development', 'UI/UX Design']],
-            ['Bima Aditya Pratama', 'bima.aditya@polinema.ac.id', '2441079002', 'SIB-3B', 'Teknologi Informasi', 'Sistem Informasi Bisnis', 2024, ['Basis Data', 'Analisis Data']],
-            ['Citra Maharani', 'citra.maharani@polinema.ac.id', '2341079003', 'TI-5A', 'Teknologi Informasi', 'Teknik Informatika', 2023, ['Mobile Development', 'Machine Learning']],
-            ['Dimas Raka Saputra', 'dimas.raka@polinema.ac.id', '2341079004', 'TI-5B', 'Teknologi Informasi', 'Teknik Informatika', 2023, ['Jaringan Komputer', 'Keamanan Siber']],
-            ['Eka Nur Fadilah', 'eka.nur@polinema.ac.id', '2541079005', 'AK-1A', 'Akuntansi', 'Akuntansi Manajemen', 2025, ['Analisis Bisnis', 'Kewirausahaan']],
-            ['Farhan Maulana', 'farhan.maulana@polinema.ac.id', '2241079006', 'AN-7A', 'Administrasi Niaga', 'Administrasi Bisnis', 2022, ['Public Speaking', 'Manajemen Proyek']],
+            ['Alya Putri Ramadhani', 'alya.putri@student.polinema.ac.id', '2441079001', 'SIB-3A', 'Teknologi Informasi', 'Sistem Informasi Bisnis', 2024, ['Web Development', 'UI/UX Design']],
+            ['Bima Aditya Pratama', 'bima.aditya@student.polinema.ac.id', '2441079002', 'SIB-3B', 'Teknologi Informasi', 'Sistem Informasi Bisnis', 2024, ['Basis Data', 'Analisis Data']],
+            ['Citra Maharani', 'citra.maharani@student.polinema.ac.id', '2341079003', 'TI-5A', 'Teknologi Informasi', 'Teknik Informatika', 2023, ['Mobile Development', 'Machine Learning']],
+            ['Dimas Raka Saputra', 'dimas.raka@student.polinema.ac.id', '2341079004', 'TI-5B', 'Teknologi Informasi', 'Teknik Informatika', 2023, ['Jaringan Komputer', 'Keamanan Siber']],
+            ['Eka Nur Fadilah', 'eka.nur@student.polinema.ac.id', '2541079005', 'AK-1A', 'Akuntansi', 'Akuntansi Manajemen', 2025, ['Analisis Bisnis', 'Kewirausahaan']],
+            ['Farhan Maulana', 'farhan.maulana@student.polinema.ac.id', '2241079006', 'AN-7A', 'Administrasi Niaga', 'Administrasi Bisnis', 2022, ['Public Speaking', 'Manajemen Proyek']],
         ];
 
         foreach ($data as $i => [$nama, $email, $nim, $kelas, $jurusan, $prodi, $angkatan, $keahlian]) {
@@ -56,8 +59,8 @@ class PenggunaSeeder extends Seeder
                 'jurusan' => $jurusan,
                 'program_studi' => $prodi,
                 'angkatan' => $angkatan,
-                'kontak' => '08120000010' . $i,
-                'tentang' => "Mahasiswa {$prodi} angkatan {$angkatan}, tertarik pada " . implode(' dan ', $keahlian) . '.',
+                'kontak' => '08120000010'.$i,
+                'tentang' => "Mahasiswa {$prodi} angkatan {$angkatan}, tertarik pada ".implode(' dan ', $keahlian).'.',
             ]);
 
             $user->keahlian()->attach(Keahlian::whereIn('nama', $keahlian)->pluck('id'));
@@ -84,8 +87,8 @@ class PenggunaSeeder extends Seeder
                 'nidn' => $nidn,
                 'jurusan' => $jurusan,
                 'program_studi' => $prodi,
-                'kontak' => '08130000020' . $i,
-                'tentang' => 'Dosen ' . $prodi . ', bidang ' . implode(' dan ', $keahlian) . '.',
+                'kontak' => '08130000020'.$i,
+                'tentang' => 'Dosen '.$prodi.', bidang '.implode(' dan ', $keahlian).'.',
                 'bersedia_membimbing_magang' => $magang,
                 'bersedia_membimbing_lomba' => $lomba,
             ]);
