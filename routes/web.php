@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminPenggunaController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BimbinganController;
+use App\Http\Controllers\DasborController;
 use App\Http\Controllers\DirektoriController;
 use App\Http\Controllers\FotoProfilController;
 use App\Http\Controllers\HomeController;
@@ -103,8 +104,9 @@ Route::middleware(['auth', EnsureRole::class.':dosen'])->group(function () {
     Route::patch('/bimbingan/{id}/tolak', [BimbinganController::class, 'tolak'])->whereNumber('id')->name('bimbingan.tolak');
 });
 
-// Mahasiswa dan dosen. Halaman /profil langsung berisi formulir ubah profil.
+// Mahasiswa dan dosen: dasbor panel (ringkasan, hanya membaca) dan profil. Halaman /profil langsung berisi formulir ubah profil.
 Route::middleware(['auth', EnsureRole::class.':mahasiswa,dosen'])->group(function () {
+    Route::get('/dasbor', DasborController::class)->name('dasbor');
     Route::get('/profil', [ProfilController::class, 'show'])->name('profil.show');
     Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
 });

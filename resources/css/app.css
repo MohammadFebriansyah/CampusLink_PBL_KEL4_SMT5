@@ -4,8 +4,8 @@
 @source '../views/**/*.blade.php';
 @source '../js/**/*.js';
 
-/* Mode gelap memakai kelas .dark di <html>. Hanya layout admin yang memasangnya,
-   jadi varian dark: di partial bersama tidak berpengaruh pada halaman publik dan mitra. */
+/* Mode gelap memakai kelas .dark di <html>. Hanya layout panel (semua peran) yang memasangnya,
+   jadi varian dark: di partial bersama tidak berpengaruh pada halaman publik. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Sidebar admin yang diciutkan menjadi deret ikon, hanya di layar lebar (data-sidebar="tutup" di <html>). */
@@ -147,6 +147,21 @@
         --sidebar-accent: #1a2540;
         --chart-1: #60a5fa;
         --chart-2: #fb923c;
+
+        /* Jembatan untuk partial bergaya situs (mis. detail informasi, riwayat profil) yang tampil di panel:
+           warna teks, garis, dan latar lembut ikut tema gelap. paper-white tidak diubah karena juga dipakai
+           sebagai warna teks di atas latar navy; untuk latar kartu pakai bg-card. */
+        --color-carbon: var(--foreground);
+        --color-graphite: var(--muted-foreground);
+        --color-ash: #7c8aa3;
+        --color-fog: var(--border);
+        --color-mist: var(--muted);
+        --color-linen: var(--muted);
+        --color-primary: #93c5fd;
+        --color-primary-wash: rgb(59 130 246 / 0.12);
+        --color-accent-dark: #fb923c;
+        --color-accent-wash: rgb(249 115 22 / 0.12);
+        --color-mint-wash: rgb(16 185 129 / 0.14);
     }
 
     .dark :focus-visible {
