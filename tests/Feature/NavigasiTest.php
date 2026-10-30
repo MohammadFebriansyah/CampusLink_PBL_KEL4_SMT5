@@ -107,17 +107,35 @@ class NavigasiTest extends TestCase
         }
     }
 
-    public function test_papan_informasi_dan_itemnya_aktif_di_halaman_kategori(): void
+    public function test_papan_informasi_dan_direktori_tampil_di_panel_dengan_menu_aktif(): void
     {
-        $respons = $this->actingAs($this->pengguna('mahasiswa'))->get(route('lomba.index'))->assertOk();
-        $deret = $this->deretUtama($respons);
+        // Halaman yang mewajibkan login memakai layout panel (sidebar), bukan navbar publik.
+        $respons = $this->actingAs($this->pengguna('mahasiswa'))->get(route('lomba.index'))->assertOk()
+            ->assertSee('id="sidebar-panel"', false)->assertDontSee('aria-label="Navigasi utama"', false);
+        preg_match('/<aside id="sidebar-panel".*?<\/aside>/s', $respons->getContent(), $cocok);
+        $sidebar = $cocok[0] ?? '';
 
-        // Tombol Papan Informasi memakai kelas aktif, dan hanya tautan Lomba yang diberi aria-current.
-        $this->assertMatchesRegularExpression('/bg-primary\/10 text-primary">\s*Papan Informasi/', $deret);
-        $this->assertMatchesRegularExpression('/href="' . preg_quote(route('lomba.index'), '/') . '"[^>]*aria-current="page"/', $deret);
-        $this->assertDoesNotMatchRegularExpression('/href="' . preg_quote(route('magang.index'), '/') . '"[^>]*aria-current="page"/', $deret);
+        // Hanya tautan Lomba di grup Jelajahi yang diberi aria-current.
+        $this->assertSame(1, substr_count($sidebar, 'aria-current="page"'));
+        $this->assertMatchesRegularExpression('/href="' . preg_quote(route('lomba.index'), '/') . '"\s+aria-current="page"/', $sidebar);
 
-        // Di layar sempit akordeon Papan Informasi langsung terbuka.
-        $respons->assertSee('x-data="{ buka: true }"', false)->assertSee('aria-controls="akordeon-papan"', false);
+        $this->actingAs($this->pengguna('dosen'))->get(route('direktori.index'))->assertOk()
+            ->assertSee('id="sidebar-panel"', false)->assertDontSee('aria-label="Navigasi utama"', false);
+    }
+
+    public function test_admin_dan_mitra_membuka_papan_informasi_di_panel_tanpa_menu_direktori(): void
+    {
+        $mitra = $this->pengguna('mitra');
+        $mitra->mitra()->create(['nama_organisasi' => 'PT Navigasi', 'kontak' => '0341-000'])
+            ->forceFill(['status_verifikasi' => \App\Models\Mitra::STATUS_DISETUJUI])->save();
+
+        foreach (['admin' => $this->pengguna('admin'), 'mitra' => $mitra] as $peran => $pengguna) {
+            $respons = $this->actingAs($pengguna)->get(route('magang.index'))->assertOk()
+                ->assertSee('id="sidebar-panel"', false);
+            preg_match('/<aside id="sidebar-panel".*?<\/aside>/s', $respons->getContent(), $cocok);
+
+            $this->assertStringContainsString('Jelajahi', $cocok[0] ?? '', "Peran {$peran}");
+            $this->assertStringNotContainsString(route('direktori.index'), $cocok[0] ?? '', "Peran {$peran}");
+        }
     }
 }

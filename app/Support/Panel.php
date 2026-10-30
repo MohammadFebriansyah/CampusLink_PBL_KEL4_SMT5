@@ -55,6 +55,7 @@ class Panel
                     ['Kelola beasiswa', route('admin.informasi.index', 'beasiswa'), $aktifInfo('beasiswa'), 'beasiswa', null],
                     ['Keahlian', route('admin.keahlian.index'), request()->routeIs('admin.keahlian.*'), 'star', null],
                 ],
+                'Jelajahi' => self::jelajahi(direktori: false),
             ],
             'notifikasi' => array_values(array_filter([
                 $mitraMenunggu > 0 ? [$mitraMenunggu.' akun mitra menunggu verifikasi', 'Mitra belum bisa masuk sebelum disetujui.', route('admin.mitra.index'), 'shield-check'] : null,
@@ -85,6 +86,7 @@ class Panel
                     ['Kelola lomba', route('mitra.informasi.index', 'lomba'), $aktifInfo('lomba'), 'lomba', null],
                     ['Kelola beasiswa', route('mitra.informasi.index', 'beasiswa'), $aktifInfo('beasiswa'), 'beasiswa', null],
                 ],
+                'Jelajahi' => self::jelajahi(direktori: false),
                 'Akun' => [
                     ['Profil organisasi', route('mitra.profil.show'), request()->routeIs('mitra.profil.*'), 'building', null],
                 ],
@@ -147,14 +149,22 @@ class Panel
         ];
     }
 
-    /** Papan informasi dan direktori (halaman situs) untuk mahasiswa dan dosen. */
-    private static function jelajahi(): array
+    /**
+     * Papan informasi (semua peran) dan direktori (hanya mahasiswa dan dosen, sesuai hak akses route-nya).
+     *
+     * @return list<array{string, string, bool, string, null}>
+     */
+    private static function jelajahi(bool $direktori = true): array
     {
-        return [
-            ['Magang', route('magang.index'), false, 'magang', null],
-            ['Lomba', route('lomba.index'), false, 'lomba', null],
-            ['Beasiswa', route('beasiswa.index'), false, 'beasiswa', null],
-            ['Direktori', route('direktori.index'), false, 'search', null],
+        $menu = [
+            ['Magang', route('magang.index'), request()->routeIs('magang.*'), 'magang', null],
+            ['Lomba', route('lomba.index'), request()->routeIs('lomba.*'), 'lomba', null],
+            ['Beasiswa', route('beasiswa.index'), request()->routeIs('beasiswa.*'), 'beasiswa', null],
         ];
+        if ($direktori) {
+            $menu[] = ['Direktori', route('direktori.index'), request()->routeIs('direktori.*'), 'search', null];
+        }
+
+        return $menu;
     }
 }
