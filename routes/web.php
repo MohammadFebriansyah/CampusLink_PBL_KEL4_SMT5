@@ -49,13 +49,11 @@ Route::middleware(['auth', EnsureRole::class.':mahasiswa,dosen'])->group(functio
 // Registrasi email: data ditahan di sesi, akun baru dibuat (CreateNewUser) setelah kode OTP benar.
 Route::middleware('guest')->group(function () {
     Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
-    Route::post('/daftar', [RegisterController::class, 'store'])
-        ->middleware('throttle:kirim-kode')->name('register.store');
+    Route::post('/daftar', [RegisterController::class, 'store'])->name('register.store');
     Route::get('/daftar/verifikasi', [RegisterController::class, 'verifikasi'])->name('register.verifikasi');
     Route::post('/daftar/verifikasi', [RegisterController::class, 'konfirmasi'])
         ->middleware('throttle:10,1')->name('register.konfirmasi');
-    Route::post('/daftar/verifikasi/kirim-ulang', [RegisterController::class, 'kirimUlang'])
-        ->middleware('throttle:kirim-kode')->name('register.kirim-ulang');
+    Route::post('/daftar/verifikasi/kirim-ulang', [RegisterController::class, 'kirimUlang'])->name('register.kirim-ulang');
 
     // Melengkapi pendaftaran setelah verifikasi Google (NIM/NIDN, program studi).
     Route::get('/daftar/google', [GoogleController::class, 'lengkapi'])->name('google.lengkapi');

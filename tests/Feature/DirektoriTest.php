@@ -45,7 +45,7 @@ class DirektoriTest extends TestCase
         unset($profil['disembunyikan_admin']);
 
         $p = $u->mahasiswa()->create(array_merge([
-            'nim' => "NIM{$n}", 'kelas' => 'SIB-3A', 'jurusan' => 'Teknologi Informasi',
+            'nim' => '2441079'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'kelas' => 'SIB-3A', 'jurusan' => 'Teknologi Informasi',
             'program_studi' => 'Sistem Informasi Bisnis', 'angkatan' => 2024, 'tampil_di_direktori' => true,
         ], $profil));
 
@@ -67,7 +67,7 @@ class DirektoriTest extends TestCase
         ], $user));
 
         $u->dosen()->create(array_merge([
-            'nidn' => "NIDN{$n}", 'jurusan' => 'Teknologi Informasi', 'program_studi' => 'Teknik Informatika',
+            'nidn' => '0701019'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'jurusan' => 'Teknologi Informasi', 'program_studi' => 'Teknik Informatika',
             'tampil_di_direktori' => true,
         ], $profil));
 

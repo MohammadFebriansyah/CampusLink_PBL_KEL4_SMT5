@@ -50,7 +50,7 @@ class AdminTest extends TestCase
         $n = ++$this->urutan;
         $u = User::factory()->create(array_merge(['role' => User::ROLE_MAHASISWA, 'email' => "mhs{$n}@polinema.ac.id", 'name' => "Mahasiswa Nomor {$n}"], $user));
         $u->mahasiswa()->create(array_merge([
-            'nim' => "NIM{$n}", 'kelas' => 'SIB-3A', 'jurusan' => 'Teknologi Informasi',
+            'nim' => '2441079'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'kelas' => 'SIB-3A', 'jurusan' => 'Teknologi Informasi',
             'program_studi' => 'Sistem Informasi Bisnis', 'angkatan' => 2024,
         ], $profil));
 
@@ -61,7 +61,7 @@ class AdminTest extends TestCase
     {
         $n = ++$this->urutan;
         $u = User::factory()->create(array_merge(['role' => User::ROLE_DOSEN, 'email' => "dsn{$n}@polinema.ac.id", 'name' => "Dosen Nomor {$n}"], $user));
-        $u->dosen()->create(['nidn' => "NIDN{$n}", 'jurusan' => 'Teknologi Informasi', 'program_studi' => 'Teknik Informatika']);
+        $u->dosen()->create(['nidn' => '0701019'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'jurusan' => 'Teknologi Informasi', 'program_studi' => 'Teknik Informatika']);
 
         return $u;
     }
@@ -318,21 +318,25 @@ class AdminTest extends TestCase
 
     public function test_aturan_ubah_data_pengguna(): void
     {
-        $a = $this->buatMahasiswa(['email' => 'a@student.polinema.ac.id'], ['nim' => 'NIM-A']);
-        $b = $this->buatMahasiswa(['email' => 'b@student.polinema.ac.id'], ['nim' => 'NIM-B']);
+        $a = $this->buatMahasiswa(['email' => 'a@student.polinema.ac.id'], ['nim' => '2441079001']);
+        $b = $this->buatMahasiswa(['email' => 'b@student.polinema.ac.id'], ['nim' => '2441079002']);
         $dosen = $this->buatDosen(['email' => 'd@polinema.ac.id']);
         $mitra = $this->buatMitra(Mitra::STATUS_DISETUJUI, ['email' => 'm@contoh.example']);
 
         // Mahasiswa dan dosen wajib email kampus.
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@gmail.com', 'nim' => 'NIM-A'])->assertSessionHasErrors('email');
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $dosen->id), ['email' => 'd@gmail.com', 'nidn' => 'X1'])->assertSessionHasErrors('email');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@gmail.com', 'nim' => '2441079001'])->assertSessionHasErrors('email');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $dosen->id), ['email' => 'd@gmail.com', 'nidn' => '0701019001'])->assertSessionHasErrors('email');
 
         // Email dan NIM harus unik terhadap pengguna lain.
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'b@student.polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasErrors('email');
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => 'NIM-B'])->assertSessionHasErrors('nim');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'b@student.polinema.ac.id', 'nim' => '2441079001'])->assertSessionHasErrors('email');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => '2441079002'])->assertSessionHasErrors('nim');
 
         // Tidak mengubah apa pun (email dan NIM sendiri) tetap valid.
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => 'NIM-A'])->assertSessionHasNoErrors();
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => '2441079001'])->assertSessionHasNoErrors();
+
+        // Validasi format NIM dan NIDN saat admin mengubah data
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $a->id), ['email' => 'a@student.polinema.ac.id', 'nim' => 'abc!!'])->assertSessionHasErrors('nim');
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $dosen->id), ['email' => 'd@polinema.ac.id', 'nidn' => '123'])->assertSessionHasErrors('nidn');
 
         // Mitra bebas memakai email apa saja.
         $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mitra->id), ['email' => 'baru@gmail.com'])->assertSessionHasNoErrors();
@@ -345,10 +349,10 @@ class AdminTest extends TestCase
         $mhs->google_id = 'g-1';
         $mhs->save();
 
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'lama@student.polinema.ac.id', 'nim' => 'NIMBARU']);
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'lama@student.polinema.ac.id', 'nim' => '2441079998']);
         $this->assertTrue($mhs->fresh()->terverifikasiGoogle());
 
-        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'baru@student.polinema.ac.id', 'nim' => 'NIMBARU']);
+        $this->sebagaiAdmin()->put(route('admin.pengguna.update', $mhs->id), ['email' => 'baru@student.polinema.ac.id', 'nim' => '2441079998']);
         $this->assertFalse($mhs->fresh()->terverifikasiGoogle());
     }
 
@@ -521,6 +525,28 @@ class AdminTest extends TestCase
     }
 
     // ---------- Keahlian ----------
+
+    public function test_keahlian_menolak_spasi_ganda_sebagai_duplikat_dan_menormalisasi_spasi(): void
+    {
+        $this->sebagaiAdmin()->post(route('admin.keahlian.store'), ['nama' => 'Web Development'])
+            ->assertRedirect(route('admin.keahlian.index'));
+        $this->assertDatabaseHas('keahlian', ['nama' => 'Web Development']);
+
+        // Spasi ganda ditolak sebagai duplikat
+        $this->sebagaiAdmin()->post(route('admin.keahlian.store'), ['nama' => 'Web  Development'])
+            ->assertSessionHasErrors(['nama' => 'Keahlian ini sudah ada.']);
+
+        // Spasi di awal, tengah, dan akhir dirapikan
+        $this->sebagaiAdmin()->post(route('admin.keahlian.store'), ['nama' => ' Basis   Data '])
+            ->assertRedirect(route('admin.keahlian.index'));
+        $this->assertDatabaseHas('keahlian', ['nama' => 'Basis Data']);
+
+        // Mengubah nama keahlian menjadi dirinya sendiri dengan spasi ganda tidak menghasilkan duplikat
+        $keahlian = Keahlian::where('nama', 'Web Development')->firstOrFail();
+        $this->sebagaiAdmin()->put(route('admin.keahlian.update', $keahlian->id), ['nama' => 'Web   Development'])
+            ->assertRedirect(route('admin.keahlian.index'))
+            ->assertSessionHasNoErrors();
+    }
 
     public function test_menambah_dan_menolak_keahlian_ganda_tanpa_membedakan_huruf(): void
     {

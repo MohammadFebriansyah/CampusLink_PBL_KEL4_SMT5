@@ -34,11 +34,13 @@ class RegisterController extends Controller
 
     private const BATAS_SALAH = 5;
 
-    private const BATAS_KIRIM = 3; // per email, per masa kode (batas per IP: limiter "kirim-kode")
+    private const BATAS_KIRIM = 3; // per email, per masa kode (batas per IP di config('kampus.batas_otp_per_ip'))
 
     private const TERKIRIM = 'terkirim';
 
     private const DIBATASI = 'dibatasi';
+
+    private const DIBATASI_IP = 'dibatasi_ip';
 
     private const GAGAL = 'gagal';
 
@@ -173,10 +175,17 @@ class RegisterController extends Controller
      * tidak mengurangi jatah kirim.
      *
      * @param  array<string, mixed>|null  $data  data pendaftaran; null = pakai data pendaftaran di sesi
-     * @return self::TERKIRIM|self::DIBATASI|self::GAGAL
+     * @return self::TERKIRIM|self::DIBATASI|self::DIBATASI_IP|self::GAGAL
      */
     private function kirimKode(Request $request, ?array $data = null): string
     {
+        $batasIp = (int) config('kampus.batas_otp_per_ip', 30);
+        $kunciIp = 'kode-ip|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($kunciIp, $batasIp)) {
+            return self::DIBATASI_IP;
+        }
+
         $data ??= $request->session()->get('registrasi_pending')['data'];
         $kunci = 'kode-email|'.$data['email'];
 
@@ -194,6 +203,7 @@ class RegisterController extends Controller
             return self::GAGAL;
         }
 
+        RateLimiter::hit($kunciIp, self::MASA_KODE_MENIT * 60);
         RateLimiter::hit($kunci, self::MASA_KODE_MENIT * 60);
 
         $request->session()->put('registrasi_pending', [
@@ -208,9 +218,11 @@ class RegisterController extends Controller
 
     private function pesanKirim(string $hasil): string
     {
-        return $hasil === self::DIBATASI
-            ? 'Terlalu banyak permintaan kode untuk email ini. Coba lagi beberapa menit lagi.'
-            : 'Email berisi kode verifikasi gagal dikirim. Periksa alamat email Anda, lalu coba lagi beberapa saat lagi.';
+        return match ($hasil) {
+            self::DIBATASI_IP => 'Terlalu banyak permintaan kode dari jaringan ini. Coba lagi dalam beberapa menit.',
+            self::DIBATASI => 'Terlalu banyak permintaan kode untuk email ini. Coba lagi beberapa menit lagi.',
+            default => 'Email berisi kode verifikasi gagal dikirim. Periksa alamat email Anda, lalu coba lagi beberapa saat lagi.',
+        };
     }
 
     /** @return array{data: array<string, mixed>, kode: string, salah: int, sampai: int}|null */
