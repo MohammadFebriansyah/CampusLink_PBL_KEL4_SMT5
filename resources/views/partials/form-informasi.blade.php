@@ -47,7 +47,10 @@
 @include('partials.field', ['name' => 'kontak', 'label' => 'Kontak penyelenggara', 'hint' => 'Email atau nomor telepon yang bisa dihubungi mahasiswa.', 'nilai' => $teks('kontak')])
 @if ($admin ?? false)
     {{-- Admin memilih: kegiatan kampus (daftar di CampusLink) atau kegiatan luar (tautan penyelenggara) --}}
-    @php $cara = old('cara_daftar', $item?->cara_daftar ?? 'eksternal'); @endphp
+    @php
+        $punyaPendaftar = $punyaPendaftar ?? (bool) ($item?->pendaftaran()->exists());
+        $cara = old('cara_daftar', $item?->cara_daftar ?? 'eksternal');
+    @endphp
     <fieldset x-data="{ cara: @js($cara) }" class="space-y-3">
         <legend class="mb-2 block text-sm font-medium">Cara mendaftar</legend>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -55,8 +58,8 @@
                 'internal' => ['Kegiatan kampus', 'Mahasiswa mendaftar di CampusLink dengan CV. Admin yang menerima atau menolak.'],
                 'eksternal' => ['Kegiatan luar kampus', 'Tombol daftar membuka situs penyelenggara. Tidak ada terima/tolak di CampusLink.'],
             ] as $nilai => [$judul, $teksPilihan])
-                <label class="flex cursor-pointer gap-3 rounded-2xl border border-fog p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-carbon dark:border-border dark:has-[:checked]:border-accent dark:has-[:checked]:bg-accent/10 dark:has-[:focus-visible]:outline-ring">
-                    <input type="radio" name="cara_daftar" value="{{ $nilai }}" x-model="cara" class="mt-1 size-4 accent-[#c2410c]" @checked($cara === $nilai)>
+                <label class="flex {{ $punyaPendaftar ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }} gap-3 rounded-2xl border border-fog p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-carbon dark:border-border dark:has-[:checked]:border-accent dark:has-[:checked]:bg-accent/10 dark:has-[:focus-visible]:outline-ring">
+                    <input type="radio" @if (! $punyaPendaftar) name="cara_daftar" @endif value="{{ $nilai }}" x-model="cara" class="mt-1 size-4 accent-[#c2410c]" @checked($cara === $nilai) @disabled($punyaPendaftar)>
                     <span>
                         <span class="block font-semibold">{{ $judul }}</span>
                         <span class="mt-0.5 block text-sm text-graphite dark:text-muted-foreground">{{ $teksPilihan }}</span>
@@ -64,6 +67,12 @@
                 </label>
             @endforeach
         </div>
+        @if ($punyaPendaftar)
+            <input type="hidden" name="cara_daftar" value="{{ $cara }}">
+            <p class="text-caption text-graphite dark:text-muted-foreground">
+                Cara daftar tidak bisa diubah karena kegiatan ini sudah punya pendaftar.
+            </p>
+        @endif
         @error('cara_daftar')
             <p class="text-sm text-ember">{{ $message }}</p>
         @enderror

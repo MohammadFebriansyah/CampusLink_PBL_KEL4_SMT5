@@ -6,6 +6,7 @@ use App\Models\Keahlian;
 use App\Models\Lomba;
 use App\Models\Magang;
 use App\Models\Mitra;
+use App\Models\Pendaftaran;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -562,6 +563,73 @@ class AdminTest extends TestCase
 
         $this->sebagaiAdmin()->delete(route('admin.informasi.destroy', ['magang', $item->id]))->assertRedirect();
         $this->assertDatabaseMissing('magang', ['id' => $item->id]);
+    }
+
+    public function test_admin_tidak_bisa_mengubah_cara_daftar_ke_eksternal_jika_sudah_punya_pendaftar(): void
+    {
+        $mitra = $this->buatMitra();
+        $item = $this->buatItem($mitra, 'magang', ['cara_daftar' => 'internal']);
+
+        $mhs = $this->buatMahasiswa();
+        $pendaftaran = new Pendaftaran(['cv' => 'cv/dummy.pdf']);
+        $pendaftaran->user()->associate($mhs);
+        $pendaftaran->informasi()->associate($item);
+        $pendaftaran->save();
+
+        // 1. Informasi internal dengan satu pendaftar, admin mengirim PUT dengan cara_daftar eksternal: ditolak
+        $respons = $this->sebagaiAdmin()->from(route('admin.informasi.edit', ['magang', $item->id]))
+            ->put(route('admin.informasi.update', ['magang', $item->id]), $this->payload('magang', [
+                'cara_daftar' => 'eksternal',
+                'tautan_pendaftaran' => 'https://contoh.example/daftar',
+            ]));
+
+        $respons->assertRedirect(route('admin.informasi.edit', ['magang', $item->id]));
+        $respons->assertSessionHasErrors(['cara_daftar' => 'Cara daftar tidak bisa diubah karena kegiatan ini sudah punya pendaftar.']);
+        $this->assertSame('internal', $item->fresh()->cara_daftar);
+
+        // 2. Mitra pemilik tetap bisa membuka halaman pendaftar
+        $this->actingAs($mitra)->get(route('mitra.pendaftar.show', $pendaftaran->id))->assertOk();
+
+        // 3. Formulir edit menampilkan pilihan nonaktif dan pesan keterangan
+        $this->sebagaiAdmin()->get(route('admin.informasi.edit', ['magang', $item->id]))
+            ->assertOk()
+            ->assertSee('Cara daftar tidak bisa diubah karena kegiatan ini sudah punya pendaftar.')
+            ->assertSee('disabled', false)
+            ->assertSee('<input type="hidden" name="cara_daftar" value="internal">', false);
+
+        // 4. Admin tetap bisa menyimpan perubahan lain saat cara_daftar internal dikirim dari input hidden
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $item->id]), $this->payload('magang', [
+            'judul' => 'Judul Diperbarui',
+            'cara_daftar' => 'internal',
+        ]))->assertRedirect(route('admin.informasi.index', 'magang'));
+
+        $this->assertSame('Judul Diperbarui', $item->fresh()->judul);
+        $this->assertSame('internal', $item->fresh()->cara_daftar);
+
+        // 5. Pendaftar berstatus selain menunggu (mis. diterima) juga tetap menghalangi perubahan ke eksternal
+        $pendaftaran->status = Pendaftaran::STATUS_DITERIMA;
+        $pendaftaran->save();
+
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $item->id]), $this->payload('magang', [
+            'cara_daftar' => 'eksternal',
+            'tautan_pendaftaran' => 'https://contoh.example/daftar',
+        ]))->assertSessionHasErrors('cara_daftar');
+
+        // 6. Informasi tanpa pendaftar masih bisa diubah ke eksternal
+        $itemTanpaPendaftar = $this->buatItem($mitra, 'magang', ['cara_daftar' => 'internal']);
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $itemTanpaPendaftar->id]), $this->payload('magang', [
+            'cara_daftar' => 'eksternal',
+            'tautan_pendaftaran' => 'https://contoh.example/daftar',
+        ]))->assertRedirect(route('admin.informasi.index', 'magang'));
+
+        $this->assertSame('eksternal', $itemTanpaPendaftar->fresh()->cara_daftar);
+
+        // 7. Perubahan dari eksternal ke internal tetap diperbolehkan
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $itemTanpaPendaftar->id]), $this->payload('magang', [
+            'cara_daftar' => 'internal',
+        ]))->assertRedirect(route('admin.informasi.index', 'magang'));
+
+        $this->assertSame('internal', $itemTanpaPendaftar->fresh()->cara_daftar);
     }
 
     public function test_moderasi_menyembunyikan_dan_menampilkan_kembali_informasi(): void
