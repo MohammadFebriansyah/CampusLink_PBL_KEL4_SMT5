@@ -21,7 +21,7 @@ class AdminKeahlianController extends Controller
         $f = $request->validated();
 
         $query = Keahlian::withCount('pengguna')
-            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereLike('nama', "%{$v}%"));
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereMengandung('nama', $v));
 
         $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 20);
         $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [

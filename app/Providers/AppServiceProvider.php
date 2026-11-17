@@ -8,7 +8,9 @@ use App\Models\Magang;
 use App\Policies\BeasiswaPolicy;
 use App\Policies\LombaPolicy;
 use App\Policies\MagangPolicy;
+use App\Support\Cari;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Builder::macro('whereMengandung', function (string $kolom, string $kata, string $boolean = 'and'): Builder {
+            return Cari::mengandung($this, $kolom, $kata, $boolean);
+        });
+        Builder::macro('orWhereMengandung', function (string $kolom, string $kata): Builder {
+            return $this->whereMengandung($kolom, $kata, 'or');
+        });
+
         // Alias pendek untuk kolom informasi_type di tabel pendaftaran dan bimbingan.
         // Sama dengan nama kategori di route, jadi mudah dipetakan bolak-balik.
         Relation::morphMap([

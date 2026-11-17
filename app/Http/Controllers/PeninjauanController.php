@@ -39,7 +39,7 @@ class PeninjauanController extends Controller
             ->with(['informasi', 'user.mahasiswa'])
             ->where('status', $status)
             ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHas(
-                'user', fn ($u) => $u->whereLike('name', "%{$v}%")->orWhereLike('email', "%{$v}%")
+                'user', fn ($u) => $u->whereMengandung('name', $v)->orWhereMengandung('email', $v)
             ));
 
         $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
