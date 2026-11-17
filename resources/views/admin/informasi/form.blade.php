@@ -16,8 +16,9 @@
                 @method('PUT')
             @endif
 
+            @php $punyaPendaftar = (bool) ($item?->pendaftaran()->exists()); @endphp
             @include('partials.field', ['name' => 'penyelenggara', 'label' => 'Penyelenggara', 'hint' => 'Nama pihak yang menyelenggarakan, tampil kepada pembaca.', 'nilai' => $item?->penyelenggara])
-            @include('partials.form-informasi', ['kategori' => $kategori, 'item' => $item, 'daftarTingkat' => $daftarTingkat, 'admin' => true])
+            @include('partials.form-informasi', ['kategori' => $kategori, 'item' => $item, 'daftarTingkat' => $daftarTingkat, 'admin' => true, 'punyaPendaftar' => $punyaPendaftar])
 
             <div class="flex justify-end gap-2 border-t border-border pt-5">
                 <x-admin.button variant="ghost" :href="route('admin.informasi.index', $kategori)">Batal</x-admin.button>
