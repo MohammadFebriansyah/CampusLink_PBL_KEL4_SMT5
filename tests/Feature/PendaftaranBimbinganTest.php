@@ -439,6 +439,156 @@ class PendaftaranBimbinganTest extends TestCase
             ->assertDontSee('method="POST" action="'.route('admin.pendaftar.tolak', $p3->id).'"', false);
     }
 
+    // ---------- BUG_CL_0013: Pembatalan dan pendaftaran ulang setelah ditolak ----------
+
+    /**
+     * Mahasiswa yang ditolak bisa membatalkan pendaftarannya.
+     * Baris dan berkas CV harus terhapus.
+     */
+    public function test_mahasiswa_ditolak_bisa_membatalkan_pendaftaran(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs = $this->mahasiswa();
+        $item = $this->magang($pemilik);
+
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $p = Pendaftaran::sole();
+        $cvLama = $p->cv;
+        $this->disk()->assertExists($cvLama);
+
+        // Mitra menolak pendaftaran.
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.tolak', $p->id));
+        $this->assertSame('ditolak', $p->fresh()->status);
+
+        // Mahasiswa membatalkan pendaftaran yang ditolak: harus berhasil.
+        $this->actingAs($mhs)->delete(route('pendaftaran.destroy', $p->id))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseCount('pendaftaran', 0);
+        $this->disk()->assertMissing($cvLama);
+    }
+
+    /**
+     * Mahasiswa yang diterima tidak bisa membatalkan pendaftaran.
+     * Pesan galat khusus harus muncul (berbeda dari pesan lama).
+     */
+    public function test_mahasiswa_diterima_tidak_bisa_membatalkan_pendaftaran(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs = $this->mahasiswa();
+        $item = $this->magang($pemilik);
+
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $p = Pendaftaran::sole();
+
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p->id));
+        $this->assertSame('diterima', $p->fresh()->status);
+
+        // Pembatalan pendaftaran yang diterima harus ditolak dengan pesan khusus.
+        $this->actingAs($mhs)->delete(route('pendaftaran.destroy', $p->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Pendaftaran yang sudah diterima tidak bisa dibatalkan. Hubungi penyelenggara.');
+
+        $this->assertDatabaseCount('pendaftaran', 1);
+    }
+
+    /**
+     * Mahasiswa yang ditolak bisa mendaftar ulang dengan CV baru.
+     * Hanya satu baris pendaftaran yang tersisa (status menunggu), CV lama terhapus.
+     */
+    public function test_mahasiswa_ditolak_bisa_daftar_ulang_dengan_cv_baru(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs = $this->mahasiswa();
+        $item = $this->magang($pemilik);
+
+        // Daftar pertama.
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $p = Pendaftaran::sole();
+        $cvLama = $p->cv;
+        $this->disk()->assertExists($cvLama);
+
+        // Mitra menolak.
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.tolak', $p->id));
+        $this->assertSame('ditolak', $p->fresh()->status);
+
+        // Daftar ulang dengan CV baru: harus berhasil.
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        // Hanya satu baris pendaftaran, status menunggu, CV lama terhapus.
+        $this->assertDatabaseCount('pendaftaran', 1);
+        $baru = Pendaftaran::sole();
+        $this->assertSame('menunggu', $baru->status);
+        $this->assertNotSame($cvLama, $baru->cv);
+        $this->disk()->assertMissing($cvLama);
+        $this->disk()->assertExists($baru->cv);
+    }
+
+    /**
+     * Pendaftaran ulang setelah batas pendaftaran lewat harus ditolak,
+     * meski sebelumnya pernah ditolak.
+     */
+    public function test_daftar_ulang_setelah_batas_ditolak(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs = $this->mahasiswa();
+        // Buat magang dengan batas yang sudah lewat.
+        $item = $pemilik->magang()->create([
+            'judul' => 'Magang Tutup',
+            'penyelenggara' => 'PT Tutup',
+            'deskripsi' => 'Desk.',
+            'persyaratan' => 'Syarat.',
+            'periode_mulai' => now()->addMonth()->toDateString(),
+            'periode_selesai' => now()->addMonths(3)->toDateString(),
+            'batas_pendaftaran' => now()->subDay()->toDateString(), // sudah lewat
+            'kontak' => 'k@tutup.example',
+            'cara_daftar' => 'internal',
+        ]);
+
+        // Langsung buat pendaftaran yang ditolak (bypass controller karena batas sudah lewat).
+        $p = new Pendaftaran(['cv' => 'cv/palsu.pdf']);
+        $p->user()->associate($mhs);
+        $p->informasi()->associate($item);
+        $p->status = Pendaftaran::STATUS_DITOLAK;
+        $p->save();
+
+        // Daftar ulang harus ditolak karena batas sudah lewat.
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()])
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Pendaftaran untuk kegiatan ini sudah ditutup.');
+
+        $this->assertDatabaseCount('pendaftaran', 1);
+    }
+
+    /**
+     * Pendaftaran berstatus menunggu atau diterima menghasilkan pesan
+     * "sudah mendaftar" (tidak dianggap ditolak).
+     */
+    public function test_pendaftaran_menunggu_atau_diterima_tidak_bisa_daftar_ulang(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs = $this->mahasiswa();
+        $item = $this->magang($pemilik);
+        $url = route('pendaftaran.store', ['magang', $item->id]);
+
+        // Status menunggu: daftar ulang → galat "sudah mendaftar".
+        $this->actingAs($mhs)->post($url, ['cv' => $this->cv()]);
+        $this->assertSame('menunggu', Pendaftaran::sole()->status);
+        $this->actingAs($mhs)->post($url, ['cv' => $this->cv()])
+            ->assertSessionHas('galat', 'Anda sudah mendaftar ke kegiatan ini.');
+        $this->assertDatabaseCount('pendaftaran', 1);
+
+        // Status diterima: daftar ulang → galat "sudah mendaftar".
+        $p = Pendaftaran::sole();
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p->id));
+        $this->actingAs($mhs)->post($url, ['cv' => $this->cv()])
+            ->assertSessionHas('galat', 'Anda sudah mendaftar ke kegiatan ini.');
+        $this->assertDatabaseCount('pendaftaran', 1);
+    }
+
     public function test_keputusan_bimbingan_oleh_dosen_bersifat_final_dan_tidak_bisa_diubah(): void
     {
         $pemilik = $this->mitra();
