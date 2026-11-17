@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -88,8 +89,11 @@ class PendaftaranController extends Controller
             return back()->with('galat', 'Pendaftaran untuk kegiatan ini sudah ditutup.');
         }
 
-        $sudah = $informasi->pendaftaran()->where('user_id', $request->user()->id)->exists();
-        if ($sudah) {
+        // Cek apakah sudah ada pendaftaran sebelumnya.
+        $lama = $informasi->pendaftaran()->where('user_id', $request->user()->id)->first();
+
+        if ($lama && $lama->status !== Pendaftaran::STATUS_DITOLAK) {
+            // Menunggu atau diterima: tidak bisa mendaftar ulang.
             return back()->with('galat', 'Anda sudah mendaftar ke kegiatan ini.');
         }
 
@@ -102,13 +106,23 @@ class PendaftaranController extends Controller
             ],
         );
 
-        // Disimpan di disk privat (storage/app/private/cv), hanya bisa diunduh lewat route yang diperiksa.
+        // Ditolak sebelumnya: hapus baris dan berkas CV lama, lalu simpan yang baru dalam satu transaksi.
+        // Pola ini mengikuti BimbinganController::store (pengajuan lama yang ditolak diganti).
+        // File CV baru disimpan sebelum transaksi; jika transaksi gagal, file baru tidak dihapus otomatis,
+        // namun tidak ada baris yang menunjuknya sehingga aman (berkas yatim akan dibersihkan kemudian).
         $path = $request->file('cv')->store('cv', 'local');
 
-        $pendaftaran = new Pendaftaran(['cv' => $path]);
-        $pendaftaran->user()->associate($request->user());
-        $pendaftaran->informasi()->associate($informasi);
-        $pendaftaran->save();
+        DB::transaction(function () use ($request, $informasi, $lama, $path) {
+            if ($lama) {
+                Storage::disk('local')->delete($lama->cv);
+                $lama->delete();
+            }
+
+            $pendaftaran = new Pendaftaran(['cv' => $path]);
+            $pendaftaran->user()->associate($request->user());
+            $pendaftaran->informasi()->associate($informasi);
+            $pendaftaran->save();
+        });
 
         return back()->with('status', 'Pendaftaran terkirim. Anda bisa memantau statusnya di Kegiatan saya.');
     }
@@ -117,8 +131,9 @@ class PendaftaranController extends Controller
     {
         $pendaftaran = $request->user()->pendaftaran()->findOrFail($id); // hanya milik sendiri
 
-        if ($pendaftaran->status !== Pendaftaran::STATUS_MENUNGGU) {
-            return back()->with('galat', 'Pendaftaran yang sudah ditinjau tidak bisa dibatalkan.');
+        // Hanya 'diterima' yang tidak boleh dibatalkan; 'menunggu' dan 'ditolak' boleh.
+        if ($pendaftaran->status === Pendaftaran::STATUS_DITERIMA) {
+            return back()->with('galat', 'Pendaftaran yang sudah diterima tidak bisa dibatalkan. Hubungi penyelenggara.');
         }
 
         Storage::disk('local')->delete($pendaftaran->cv);

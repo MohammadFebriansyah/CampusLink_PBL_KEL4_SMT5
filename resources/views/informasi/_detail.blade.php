@@ -89,11 +89,35 @@
             @endif
             <div class="mt-4 flex flex-wrap items-center gap-2">
                 <a href="{{ route('pendaftaran.cv', $pd->id) }}" class="inline-flex items-center rounded-full border border-fog bg-card px-3.5 py-1.5 text-sm font-medium hover:border-accent/50 hover:text-accent-dark">Lihat CV saya</a>
-                @if ($pd->status === 'menunggu')
+                @if ($pd->status === 'menunggu' || $pd->status === 'ditolak')
                     @include('partials.aksi', ['url' => route('pendaftaran.destroy', $pd->id), 'method' => 'DELETE', 'tombol' => 'Batalkan pendaftaran', 'pertanyaan' => 'Batalkan?', 'ya' => 'Ya, batalkan'])
                 @endif
             </div>
         </div>
+        {{-- Ditolak dan masih terbuka: tawarkan pendaftaran ulang dengan CV baru --}}
+        @if ($pd->status === 'ditolak' && $terbuka && $item->lewatCampuslink() && $peran === 'mahasiswa')
+            <form method="POST" action="{{ route('pendaftaran.store', [$kategori, $item->id]) }}" enctype="multipart/form-data"
+                  x-data="{ nama: '' }" class="mt-4 rounded-2xl bg-navy p-5 text-paper-white">
+                @csrf
+                <p class="font-semibold">Daftar ulang dengan CV baru</p>
+                <p class="mt-1 text-sm text-white/70">
+                    Pendaftaran Anda ditolak. Jika Anda memiliki CV baru, unggah di sini untuk mendaftar ulang.
+                    CV lama akan dihapus secara otomatis.
+                </p>
+                <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <label for="cv-ulang-{{ $item->id }}" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white/10 px-4 py-3 text-sm font-semibold ring-1 ring-white/25 hover:bg-white/15">
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+                        <span x-text="nama || 'Pilih CV baru (PDF)'">Pilih CV baru (PDF)</span>
+                    </label>
+                    <input id="cv-ulang-{{ $item->id }}" name="cv" type="file" accept="application/pdf" required class="sr-only"
+                           x-on:change="nama = $event.target.files[0]?.name ?? ''">
+                    <button type="submit" class="btn btn-primary px-6 py-3">Daftar ulang</button>
+                </div>
+                @error('cv')
+                    <p class="mt-2 text-sm text-[#fdba74]">{{ $message }}</p>
+                @enderror
+            </form>
+        @endif
     @elseif (! $terbuka)
         <div class="mt-8 rounded-2xl border border-fog bg-background p-5">
             <p class="font-semibold">Pendaftaran sudah ditutup.</p>
