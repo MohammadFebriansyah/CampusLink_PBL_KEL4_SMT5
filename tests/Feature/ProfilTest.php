@@ -210,6 +210,28 @@ class ProfilTest extends TestCase
         $this->assertNull($user->mahasiswa()->first()->foto);
     }
 
+    public function test_validasi_format_nama_dan_kelas_pada_profil(): void
+    {
+        $user = $this->buatMahasiswa();
+
+        // Nama tidak valid (simbol)
+        $this->actingAs($user)->put(route('profil.update'), $this->dataProfil(['name' => '@@@###']))
+            ->assertSessionHasErrors('name');
+
+        // Kelas tidak valid (simbol)
+        $this->actingAs($user)->put(route('profil.update'), $this->dataProfil(['kelas' => '###']))
+            ->assertSessionHasErrors('kelas');
+
+        // Nilai valid dengan spasi di awal/akhir dirapikan dan disimpan
+        $this->actingAs($user)->put(route('profil.update'), $this->dataProfil([
+            'name' => '  Dr. Rina Kusumawati, S.Kom., M.T.  ',
+            'kelas' => '  SIB-3A  ',
+        ]))->assertRedirect(route('profil.show'))->assertSessionHasNoErrors();
+
+        $this->assertSame('Dr. Rina Kusumawati, S.Kom., M.T.', $user->fresh()->name);
+        $this->assertSame('SIB-3A', $user->fresh()->mahasiswa->kelas);
+    }
+
     // ---------- Dosen ----------
 
     public function test_dosen_memperbarui_kesediaan_membimbing(): void

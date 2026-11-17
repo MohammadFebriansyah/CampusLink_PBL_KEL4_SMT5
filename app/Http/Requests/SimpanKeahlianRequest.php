@@ -15,7 +15,10 @@ class SimpanKeahlianRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['nama' => trim((string) $this->input('nama'))]);
+        $nama = trim((string) $this->input('nama'));
+        $nama = (string) preg_replace('/\s+/u', ' ', $nama);
+
+        $this->merge(['nama' => $nama]);
     }
 
     public function rules(): array

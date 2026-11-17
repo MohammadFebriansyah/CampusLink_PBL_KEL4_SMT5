@@ -37,6 +37,13 @@ return [
      */
     'google_wajib_hd' => true,
 
+    /*
+     * Batas pengiriman kode OTP pendaftaran per alamat IP dalam 10 menit.
+     * Melindungi sistem dari penyalahgunaan satu IP yang mengirim ke banyak email,
+     * sekaligus ramah untuk pengguna yang berbagi IP publik (mis. Wi-Fi kampus).
+     */
+    'batas_otp_per_ip' => (int) env('BATAS_OTP_PER_IP', 30),
+
     'jurusan' => [
         'Administrasi Niaga' => [
             'Administrasi Bisnis',

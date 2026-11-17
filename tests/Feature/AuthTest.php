@@ -442,17 +442,68 @@ class AuthTest extends TestCase
         $this->post(route('register.konfirmasi'), ['kode' => $kode])->assertRedirect(route('profil.show'));
     }
 
+    public function test_validasi_format_nama_nim_nidn_dan_kelas(): void
+    {
+        // NIM tidak valid
+        foreach (['abc!!', '99 99', '12'] as $nimSalah) {
+            $this->post(route('register.store'), $this->dataMahasiswa(['nim' => $nimSalah]))
+                ->assertSessionHasErrors('nim');
+        }
+
+        // Kelas tidak valid
+        $this->post(route('register.store'), $this->dataMahasiswa(['kelas' => '###']))
+            ->assertSessionHasErrors('kelas');
+
+        // Nama tidak valid
+        $this->post(route('register.store'), $this->dataMahasiswa(['name' => '@@@###']))
+            ->assertSessionHasErrors('name');
+
+        // Nilai valid diterima
+        $this->post(route('register.store'), $this->dataMahasiswa([
+            'nim' => '2441079001',
+            'kelas' => 'SIB-3A',
+            'name' => 'Dr. Rina Kusumawati, S.Kom., M.T.',
+        ]))->assertRedirect(route('register.verifikasi'));
+    }
+
+    public function test_sepuluh_kiriman_tidak_valid_tidak_mengurangi_jatah_ip_dan_kiriman_valid_berikutnya_berhasil(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $this->post(route('register.store'), $this->dataMahasiswa(['email' => 'salah', 'name' => '']))
+                ->assertSessionHasErrors(['email', 'name']);
+        }
+
+        $this->post(route('register.store'), $this->dataMahasiswa())
+            ->assertRedirect(route('register.verifikasi'));
+    }
+
     public function test_pengiriman_kode_dibatasi_per_ip(): void
     {
+        config(['kampus.batas_otp_per_ip' => 6]);
+
         foreach (range(1, 6) as $i) {
-            $this->post(route('register.store'), $this->dataMahasiswa(['email' => "mhs{$i}@student.polinema.ac.id", 'nim' => "NIM{$i}"]))
+            $nim = '2441079'.str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+            $this->post(route('register.store'), $this->dataMahasiswa(['email' => "mhs{$i}@student.polinema.ac.id", 'nim' => $nim]))
                 ->assertRedirect(route('register.verifikasi'));
         }
 
         // Alamat ke-7 dari IP yang sama ditolak walau emailnya baru.
-        $this->from(route('register'))->post(route('register.store'), $this->dataMahasiswa(['email' => 'mhs7@student.polinema.ac.id', 'nim' => 'NIM7']))
-            ->assertRedirect(route('register'))->assertSessionHasErrors('email');
+        $this->from(route('register'))->post(route('register.store'), $this->dataMahasiswa(['email' => 'mhs7@student.polinema.ac.id', 'nim' => '2441079007']))
+            ->assertRedirect(route('register'))
+            ->assertSessionHasErrors(['email' => 'Terlalu banyak permintaan kode dari jaringan ini. Coba lagi dalam beberapa menit.']);
         Mail::assertSent(KodeVerifikasiMail::class, 6);
+    }
+
+    public function test_batas_per_email_tetap_bekerja(): void
+    {
+        $data = $this->dataMahasiswa();
+        $this->daftarDanAmbilKode($data);
+
+        // Kirim ulang sampai melebihi batas per email (BATAS_KIRIM = 3)
+        $this->post(route('register.kirim-ulang'))->assertSessionHas('status'); // ke-2
+        $this->post(route('register.kirim-ulang'))->assertSessionHas('status'); // ke-3
+        $this->post(route('register.kirim-ulang'))
+            ->assertSessionHasErrors(['kode' => 'Terlalu banyak permintaan kode untuk email ini. Coba lagi beberapa menit lagi.']);
     }
 
     public function test_email_kode_berisi_masa_berlaku_dan_peringatan_tanpa_kode_di_subjek(): void

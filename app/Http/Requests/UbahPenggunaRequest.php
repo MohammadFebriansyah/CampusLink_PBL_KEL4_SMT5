@@ -18,7 +18,16 @@ class UbahPenggunaRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => Str::lower(trim((string) $this->input('email')))]);
+        $merge = [];
+        foreach (['nim', 'nidn'] as $field) {
+            if ($this->has($field)) {
+                $merge[$field] = trim((string) $this->input($field));
+            }
+        }
+        if ($this->has('email')) {
+            $merge['email'] = Str::lower(trim((string) $this->input('email')));
+        }
+        $this->merge($merge);
     }
 
     public function rules(): array
@@ -34,7 +43,7 @@ class UbahPenggunaRequest extends FormRequest
 
             $email[] = function ($atribut, $nilai, $gagal) use ($peran) {
                 if (! Kampus::emailSesuaiPeran((string) $nilai, $peran)) {
-                    $gagal(ucfirst($peran) . ' wajib memakai email ' . Kampus::labelDomain($peran) . '.');
+                    $gagal(ucfirst($peran).' wajib memakai email '.Kampus::labelDomain($peran).'.');
                 }
             };
         }
@@ -42,13 +51,21 @@ class UbahPenggunaRequest extends FormRequest
         return match ($user->role) {
             User::ROLE_MAHASISWA => [
                 'email' => $email,
-                'nim' => ['required', 'string', 'max:20', Rule::unique('mahasiswa', 'nim')->ignore($user->mahasiswa?->id)],
+                'nim' => ['required', 'string', 'regex:/^[0-9]{8,12}$/', Rule::unique('mahasiswa', 'nim')->ignore($user->mahasiswa?->id)],
             ],
             User::ROLE_DOSEN => [
                 'email' => $email,
-                'nidn' => ['required', 'string', 'max:20', Rule::unique('dosen', 'nidn')->ignore($user->dosen?->id)],
+                'nidn' => ['required', 'digits:10', Rule::unique('dosen', 'nidn')->ignore($user->dosen?->id)],
             ],
             default => ['email' => $email],
         };
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nim.regex' => 'NIM hanya boleh berisi angka (8 sampai 12 digit).',
+            'nidn.digits' => 'NIDN harus tepat 10 digit angka.',
+        ];
     }
 }

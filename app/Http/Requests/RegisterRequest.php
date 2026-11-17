@@ -20,25 +20,34 @@ class RegisterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => Str::lower(trim((string) $this->input('email')))]);
+        $merge = [];
+        foreach (['name', 'nim', 'nidn', 'kelas', 'nama_organisasi', 'kontak'] as $field) {
+            if ($this->has($field)) {
+                $merge[$field] = trim((string) $this->input($field));
+            }
+        }
+        if ($this->has('email')) {
+            $merge['email'] = Str::lower(trim((string) $this->input('email')));
+        }
+        $this->merge($merge);
     }
 
     public function rules(): array
     {
         $umum = [
             'peran' => ['required', Rule::in(self::PERAN)],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'regex:/^[\pL][\pL\s.,\'\-]*$/u'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
 
-        $emailKampus = fn(string $peran) => [
+        $emailKampus = fn (string $peran) => [
             'required',
             'email',
             'max:255',
             'unique:users,email',
             function ($atribut, $nilai, $gagal) use ($peran) {
                 if (! Kampus::emailSesuaiPeran((string) $nilai, $peran)) {
-                    $gagal(ucfirst($peran) . ' wajib memakai email ' . Kampus::labelDomain($peran) . '.');
+                    $gagal(ucfirst($peran).' wajib memakai email '.Kampus::labelDomain($peran).'.');
                 }
             },
         ];
@@ -46,14 +55,14 @@ class RegisterRequest extends FormRequest
         return match ($this->input('peran')) {
             User::ROLE_MAHASISWA => $umum + [
                 'email' => $emailKampus(User::ROLE_MAHASISWA),
-                'nim' => ['required', 'string', 'max:20', 'unique:mahasiswa,nim'],
-                'kelas' => ['required', 'string', 'max:20'],
+                'nim' => ['required', 'string', 'regex:/^[0-9]{8,12}$/', 'unique:mahasiswa,nim'],
+                'kelas' => ['required', 'string', 'max:20', 'regex:/^[\pL\pN][\pL\pN \-]{0,19}$/u'],
                 'program_studi' => ['required', Rule::in(Kampus::semuaProdi())],
-                'angkatan' => ['required', 'integer', 'between:2000,' . date('Y')],
+                'angkatan' => ['required', 'integer', 'between:2000,'.date('Y')],
             ],
             User::ROLE_DOSEN => $umum + [
                 'email' => $emailKampus(User::ROLE_DOSEN),
-                'nidn' => ['required', 'string', 'max:20', 'unique:dosen,nidn'],
+                'nidn' => ['required', 'digits:10', 'unique:dosen,nidn'],
                 'program_studi' => ['required', Rule::in(Kampus::semuaProdi())],
             ],
             User::ROLE_MITRA => $umum + [
@@ -66,5 +75,15 @@ class RegisterRequest extends FormRequest
                 'email' => ['required', 'email', 'max:255'],
             ],
         };
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.regex' => 'Nama harus diawali huruf dan hanya boleh berisi huruf, spasi, titik, koma, apostrof, dan tanda hubung.',
+            'nim.regex' => 'NIM hanya boleh berisi angka (8 sampai 12 digit).',
+            'nidn.digits' => 'NIDN harus tepat 10 digit angka.',
+            'kelas.regex' => 'Kelas hanya boleh berisi huruf, angka, spasi, dan tanda hubung.',
+        ];
     }
 }

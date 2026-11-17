@@ -6,10 +6,8 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\LogoutResponse;
 use App\Models\User;
-use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Support\Timebox;
@@ -39,17 +37,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn () => view('auth.login'));
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::authenticateUsing(fn (Request $request) => $this->autentikasi($request));
-
-        // Pengiriman kode OTP per IP (registrasi dan kirim ulang). Batas per email ada di RegisterController.
-        // Mencegah satu pihak memakai formulir daftar untuk mengirim email ke banyak alamat.
-        RateLimiter::for('kirim-kode', function (Request $request) {
-            return Limit::perMinutes(10, 6)->by($request->ip())->response(function (Request $request) {
-                $pesan = 'Terlalu banyak permintaan kode dari jaringan ini. Coba lagi dalam beberapa menit.';
-
-                return back()->withInput($request->except(['password', 'password_confirmation']))
-                    ->withErrors(['email' => $pesan, 'kode' => $pesan]);
-            });
-        });
     }
 
     /**
