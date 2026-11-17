@@ -11,8 +11,6 @@
         ['beasiswa.index', 'beasiswa.*', 'Beasiswa'],
     ];
     $papanAktif = request()->routeIs('magang.*', 'lomba.*', 'beasiswa.*');
-    $saya = auth()->user();
-    $bolehDirektori = ! $saya || in_array($saya->role, ['mahasiswa', 'dosen'], true);
 @endphp
 <header x-data="{ scrolled: window.scrollY > 8 }" @scroll.window.passive="scrolled = window.scrollY > 8"
         :class="scrolled ? 'shadow-[0_6px_24px_-12px_rgb(15_30_80/0.25)]' : ''"

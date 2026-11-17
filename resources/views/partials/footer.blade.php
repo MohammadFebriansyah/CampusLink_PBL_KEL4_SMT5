@@ -17,7 +17,9 @@
         <div>
             <p class="font-medium">Pengguna</p>
             <ul class="mt-3 space-y-2 text-graphite">
-                <li><a href="{{ route('direktori.index') }}" class="hover:text-primary hover:underline">Direktori</a></li>
+                @if ($bolehDirektori)
+                    <li><a href="{{ route('direktori.index') }}" class="hover:text-primary hover:underline">Direktori</a></li>
+                @endif
                 <li><a href="{{ route('login') }}" class="hover:text-primary hover:underline">Masuk</a></li>
                 <li><a href="{{ route('register') }}" class="hover:text-primary hover:underline">Daftar</a></li>
             </ul>
