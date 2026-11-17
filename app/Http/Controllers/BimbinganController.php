@@ -63,6 +63,8 @@ class BimbinganController extends Controller
     {
         $informasi = Informasi::cari($kategori, $id);
         abort_unless($informasi->bisaBimbingan(), 404);
+        // Yang disembunyikan admin tidak bisa menerima bimbingan, sama seperti halaman detail.
+        abort_unless($informasi->status === $informasi::STATUS_TAYANG, 404);
 
         $mahasiswa = $request->user();
 

@@ -333,6 +333,41 @@ class PendaftaranBimbinganTest extends TestCase
         $this->actingAs($this->mahasiswa())->post('/beasiswa/'.$item->id.'/bimbingan', ['dosen_id' => $this->dosen()->id])->assertNotFound();
     }
 
+    public function test_informasi_yang_disembunyikan_admin_tidak_bisa_menerima_bimbingan(): void
+    {
+        $admin = $this->admin();
+        $mhs = $this->mahasiswa();
+        $dosen = $this->dosen();
+        $item = $this->magang($admin, 'eksternal');
+
+        // Admin menyembunyikan magang eksternal.
+        $this->actingAs($admin)->patch(route('admin.informasi.sembunyikan', ['magang', $item->id]))
+            ->assertRedirect();
+        $this->assertSame(Magang::STATUS_DISEMBUNYIKAN, $item->fresh()->status);
+
+        // Mahasiswa mengirim POST bimbingan dengan dosen yang bersedia dan bukti PDF valid ke informasi tersembunyi.
+        $url = route('bimbingan.store', ['magang', $item->id]);
+        $this->actingAs($mhs)->post($url, [
+            'dosen_id' => $dosen->id,
+            'bukti' => $this->bukti(),
+        ])->assertNotFound();
+
+        // Tidak ada baris baru di tabel bimbingan.
+        $this->assertDatabaseCount('bimbingan', 0);
+
+        // Informasi yang tayang tetap bisa menerima permintaan bimbingan seperti sebelumnya.
+        $itemTayang = $this->magang($admin, 'eksternal');
+        $this->assertSame(Magang::STATUS_TAYANG, $itemTayang->fresh()->status);
+        $urlTayang = route('bimbingan.store', ['magang', $itemTayang->id]);
+        $this->actingAs($mhs)->post($urlTayang, [
+            'dosen_id' => $dosen->id,
+            'bukti' => $this->bukti(),
+        ])->assertRedirect();
+
+        $this->assertDatabaseCount('bimbingan', 1);
+        $this->assertSame($dosen->id, Bimbingan::sole()->dosen_id);
+    }
+
     public function test_keputusan_pendaftaran_bersifat_final_dan_tidak_bisa_diubah(): void
     {
         $pemilik = $this->mitra();
