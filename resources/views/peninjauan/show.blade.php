@@ -113,25 +113,32 @@
                     @endif
                 </p>
 
-                <label for="catatan" class="mt-4 mb-2 block text-sm font-medium">Catatan untuk pendaftar (opsional)</label>
-                <textarea id="catatan" rows="3" maxlength="1000" x-model="catatan" class="field" placeholder="Misalnya jadwal wawancara atau alasan penolakan"></textarea>
+                @if ($p->status === 'menunggu')
+                    <label for="catatan" class="mt-4 mb-2 block text-sm font-medium">Catatan untuk pendaftar (opsional)</label>
+                    <textarea id="catatan" rows="3" maxlength="1000" x-model="catatan" class="field" placeholder="Misalnya jadwal wawancara atau alasan penolakan"></textarea>
 
-                <div class="mt-4 grid grid-cols-2 gap-2">
-                    <form method="POST" action="{{ route($rute . '.terima', $p->id) }}">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="catatan" :value="catatan">
-                        <x-admin.button type="submit" variant="success" size="lg" @class(['w-full', 'ring-2 ring-emerald-500/40 ring-offset-2 ring-offset-card' => $p->status === 'diterima'])>Terima</x-admin.button>
-                    </form>
-                    <form method="POST" action="{{ route($rute . '.tolak', $p->id) }}">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="catatan" :value="catatan">
-                        <x-admin.button type="submit" variant="danger-outline" size="lg" class="w-full">Tolak</x-admin.button>
-                    </form>
-                </div>
-                @if ($p->status !== 'menunggu')
-                    <p class="mt-3 text-xs text-muted-foreground">Keputusan masih bisa diubah. Pendaftar melihat status terbaru di halaman Kegiatan saya.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <form method="POST" action="{{ route($rute . '.terima', $p->id) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="catatan" :value="catatan">
+                            <x-admin.button type="submit" variant="success" size="lg" class="w-full">Terima</x-admin.button>
+                        </form>
+                        <form method="POST" action="{{ route($rute . '.tolak', $p->id) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="catatan" :value="catatan">
+                            <x-admin.button type="submit" variant="danger-outline" size="lg" class="w-full">Tolak</x-admin.button>
+                        </form>
+                    </div>
+                @else
+                    @if ($p->catatan)
+                        <div class="mt-4 rounded-lg bg-muted/60 p-3 text-sm">
+                            <p class="text-xs font-medium text-muted-foreground">Catatan untuk pendaftar</p>
+                            <p class="mt-1 text-sm whitespace-pre-line">{{ $p->catatan }}</p>
+                        </div>
+                    @endif
+                    <p class="mt-3 text-xs text-muted-foreground">Keputusan bersifat final dan tidak bisa diubah.</p>
                 @endif
             </x-admin.card>
 

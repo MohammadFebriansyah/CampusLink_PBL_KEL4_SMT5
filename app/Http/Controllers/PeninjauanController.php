@@ -81,13 +81,30 @@ class PeninjauanController extends Controller
     private function putuskan(Request $request, string $id, string $status, string $pesan): RedirectResponse
     {
         $pendaftaran = $this->cari($request, $id);
+
+        // Keputusan bersifat final: hanya pendaftar berstatus menunggu yang bisa diputuskan.
+        if ($pendaftaran->status !== Pendaftaran::STATUS_MENUNGGU) {
+            return back()->with('galat', 'Pendaftar ini sudah ditinjau dan keputusannya tidak bisa diubah.');
+        }
+
         $data = $request->validate(['catatan' => ['nullable', 'string', 'max:1000']]);
 
-        $pendaftaran->status = $status;
-        $pendaftaran->catatan = $data['catatan'] ?? null;
-        $pendaftaran->ditinjau_oleh = $request->user()->id;
-        $pendaftaran->ditinjau_pada = now();
-        $pendaftaran->save();
+        $now = now();
+        // Update bersyarat untuk menghindari balapan antar dua permintaan konkuren.
+        $terubah = Pendaftaran::query()
+            ->where('id', $pendaftaran->id)
+            ->where('status', Pendaftaran::STATUS_MENUNGGU)
+            ->update([
+                'status' => $status,
+                'catatan' => $data['catatan'] ?? null,
+                'ditinjau_oleh' => $request->user()->id,
+                'ditinjau_pada' => $now,
+                'updated_at' => $now,
+            ]);
+
+        if ($terubah === 0) {
+            return back()->with('galat', 'Pendaftar ini sudah ditinjau dan keputusannya tidak bisa diubah.');
+        }
 
         return back()->with('status', $pesan);
     }

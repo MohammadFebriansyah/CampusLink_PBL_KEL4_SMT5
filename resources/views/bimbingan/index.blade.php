@@ -82,24 +82,34 @@
                         </template>
                     </div>
 
-                    <div class="mt-auto pt-4">
-                        <label :for="`catatan-${b.id}`" class="sr-only">Catatan untuk mahasiswa</label>
-                        <textarea :id="`catatan-${b.id}`" rows="2" maxlength="1000" x-model="catatan" class="field text-sm" placeholder="Catatan untuk mahasiswa (opsional), misalnya jadwal bimbingan"></textarea>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <form method="POST" :action="b.url.terima">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="catatan" :value="catatan">
-                                <x-admin.button type="submit" variant="success" class="w-full" x-text="b.status.kunci === 'diterima' ? 'Simpan catatan' : 'Terima'">Terima</x-admin.button>
-                            </form>
-                            <form method="POST" :action="b.url.tolak">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="catatan" :value="catatan">
-                                <x-admin.button type="submit" variant="danger-outline" class="w-full">Tolak</x-admin.button>
-                            </form>
+                    <template x-if="b.status.kunci === 'menunggu'">
+                        <div class="mt-auto pt-4">
+                            <label :for="`catatan-${b.id}`" class="sr-only">Catatan untuk mahasiswa</label>
+                            <textarea :id="`catatan-${b.id}`" rows="2" maxlength="1000" x-model="catatan" class="field text-sm" placeholder="Catatan untuk mahasiswa (opsional), misalnya jadwal bimbingan"></textarea>
+                            <div class="mt-3 grid grid-cols-2 gap-2">
+                                <form method="POST" :action="b.url.terima">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="catatan" :value="catatan">
+                                    <x-admin.button type="submit" variant="success" class="w-full">Terima</x-admin.button>
+                                </form>
+                                <form method="POST" :action="b.url.tolak">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="catatan" :value="catatan">
+                                    <x-admin.button type="submit" variant="danger-outline" class="w-full">Tolak</x-admin.button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
+                    </template>
+                    <template x-if="b.status.kunci !== 'menunggu' && b.catatan">
+                        <div class="mt-auto pt-4">
+                            <div class="rounded-lg bg-muted/60 p-3 text-sm">
+                                <span class="font-medium text-foreground">Catatan Anda:</span>
+                                <span class="text-muted-foreground" x-text="b.catatan"></span>
+                            </div>
+                        </div>
+                    </template>
                 </article>
             </template>
 

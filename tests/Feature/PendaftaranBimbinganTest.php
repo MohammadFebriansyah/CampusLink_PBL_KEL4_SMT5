@@ -8,8 +8,8 @@ use App\Models\Magang;
 use App\Models\Mitra;
 use App\Models\Pendaftaran;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -78,7 +78,7 @@ class PendaftaranBimbinganTest extends TestCase
     private function mitra(string $email = 'a@mitra.example'): User
     {
         $u = User::factory()->create(['role' => User::ROLE_MITRA, 'email' => $email]);
-        $m = $u->mitra()->create(['nama_organisasi' => 'PT ' . $email, 'kontak' => '0341']);
+        $m = $u->mitra()->create(['nama_organisasi' => 'PT '.$email, 'kontak' => '0341']);
         $m->status_verifikasi = Mitra::STATUS_DISETUJUI;
         $m->save();
 
@@ -87,7 +87,7 @@ class PendaftaranBimbinganTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin' . (++$this->urutan) . '@polinema.ac.id']);
+        return User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin'.(++$this->urutan).'@polinema.ac.id']);
     }
 
     private function magang(User $pemilik, string $cara = 'internal'): Magang
@@ -330,6 +330,124 @@ class PendaftaranBimbinganTest extends TestCase
             'tautan_pendaftaran' => 'https://b.example',
         ]);
 
-        $this->actingAs($this->mahasiswa())->post('/beasiswa/' . $item->id . '/bimbingan', ['dosen_id' => $this->dosen()->id])->assertNotFound();
+        $this->actingAs($this->mahasiswa())->post('/beasiswa/'.$item->id.'/bimbingan', ['dosen_id' => $this->dosen()->id])->assertNotFound();
+    }
+
+    public function test_keputusan_pendaftaran_bersifat_final_dan_tidak_bisa_diubah(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs1 = $this->mahasiswa();
+        $mhs2 = $this->mahasiswa();
+        $item = $this->magang($pemilik);
+
+        $this->actingAs($mhs1)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $this->actingAs($mhs2)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+
+        $p1 = Pendaftaran::where('user_id', $mhs1->id)->sole();
+        $p2 = Pendaftaran::where('user_id', $mhs2->id)->sole();
+
+        // Sebelum ditinjau: halaman detail menampilkan tombol Terima dan Tolak.
+        $this->actingAs($pemilik)->get(route('mitra.pendaftar.show', $p1->id))
+            ->assertOk()
+            ->assertSee('Terima')
+            ->assertSee('Tolak')
+            ->assertDontSee('Keputusan bersifat final dan tidak bisa diubah.');
+
+        // 1. Terima lalu tolak: pendaftaran tetap diterima dan menghasilkan pesan galat.
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p1->id))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertSame('diterima', $p1->fresh()->status);
+
+        // Setelah ditinjau: tombol terima dan tolak disembunyikan di UI detail.
+        $this->actingAs($pemilik)->get(route('mitra.pendaftar.show', $p1->id))
+            ->assertOk()
+            ->assertSee('Keputusan bersifat final dan tidak bisa diubah.')
+            ->assertDontSee('method="POST" action="'.route('mitra.pendaftar.terima', $p1->id).'"', false)
+            ->assertDontSee('method="POST" action="'.route('mitra.pendaftar.tolak', $p1->id).'"', false);
+
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.tolak', $p1->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Pendaftar ini sudah ditinjau dan keputusannya tidak bisa diubah.');
+        $this->assertSame('diterima', $p1->fresh()->status);
+
+        // 2. Tolak lalu terima: pendaftaran tetap ditolak dan menghasilkan pesan galat.
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.tolak', $p2->id))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertSame('ditolak', $p2->fresh()->status);
+
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p2->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Pendaftar ini sudah ditinjau dan keputusannya tidak bisa diubah.');
+        $this->assertSame('ditolak', $p2->fresh()->status);
+
+        // 3. Berlaku juga untuk admin yang meninjau kegiatan internal.
+        $admin = $this->admin();
+        $mhs3 = $this->mahasiswa();
+        $lomba = $this->lomba($admin);
+        $this->actingAs($mhs3)->post(route('pendaftaran.store', ['lomba', $lomba->id]), ['cv' => $this->cv()]);
+        $p3 = Pendaftaran::where('user_id', $mhs3->id)->sole();
+
+        $this->actingAs($admin)->patch(route('admin.pendaftar.tolak', $p3->id))->assertRedirect();
+        $this->assertSame('ditolak', $p3->fresh()->status);
+
+        $this->actingAs($admin)->patch(route('admin.pendaftar.terima', $p3->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Pendaftar ini sudah ditinjau dan keputusannya tidak bisa diubah.');
+        $this->assertSame('ditolak', $p3->fresh()->status);
+
+        $this->actingAs($admin)->get(route('admin.pendaftar.show', $p3->id))
+            ->assertOk()
+            ->assertSee('Keputusan bersifat final dan tidak bisa diubah.')
+            ->assertDontSee('method="POST" action="'.route('admin.pendaftar.terima', $p3->id).'"', false)
+            ->assertDontSee('method="POST" action="'.route('admin.pendaftar.tolak', $p3->id).'"', false);
+    }
+
+    public function test_keputusan_bimbingan_oleh_dosen_bersifat_final_dan_tidak_bisa_diubah(): void
+    {
+        $pemilik = $this->mitra();
+        $mhs1 = $this->mahasiswa();
+        $mhs2 = $this->mahasiswa();
+        $dosen = $this->dosen();
+        $item = $this->magang($pemilik);
+
+        // Mendaftar dan diterima mitra agar boleh mengajukan bimbingan internal.
+        $this->actingAs($mhs1)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $this->actingAs($mhs2)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $p1 = Pendaftaran::where('user_id', $mhs1->id)->sole();
+        $p2 = Pendaftaran::where('user_id', $mhs2->id)->sole();
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p1->id));
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', $p2->id));
+
+        // Ajukan bimbingan ke dosen.
+        $url = route('bimbingan.store', ['magang', $item->id]);
+        $this->actingAs($mhs1)->post($url, ['dosen_id' => $dosen->id]);
+        $this->actingAs($mhs2)->post($url, ['dosen_id' => $dosen->id]);
+
+        $b1 = Bimbingan::where('mahasiswa_id', $mhs1->id)->sole();
+        $b2 = Bimbingan::where('mahasiswa_id', $mhs2->id)->sole();
+
+        // 1. Terima lalu tolak: bimbingan tetap diterima dan menghasilkan pesan galat.
+        $this->actingAs($dosen)->patch(route('bimbingan.terima', $b1->id))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertSame('diterima', $b1->fresh()->status);
+
+        $this->actingAs($dosen)->patch(route('bimbingan.tolak', $b1->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Permintaan bimbingan ini sudah dijawab dan tidak bisa diubah.');
+        $this->assertSame('diterima', $b1->fresh()->status);
+
+        // 2. Tolak lalu terima: bimbingan tetap ditolak dan menghasilkan pesan galat.
+        $this->actingAs($dosen)->patch(route('bimbingan.tolak', $b2->id))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertSame('ditolak', $b2->fresh()->status);
+
+        $this->actingAs($dosen)->patch(route('bimbingan.terima', $b2->id))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Permintaan bimbingan ini sudah dijawab dan tidak bisa diubah.');
+        $this->assertSame('ditolak', $b2->fresh()->status);
     }
 }
