@@ -55,13 +55,13 @@ class SimpanInformasiRequest extends FormRequest
             'magang' => $umum + [
                 'persyaratan' => ['required', 'string', 'max:5000'],
                 'lokasi' => ['nullable', 'string', 'max:255'],
-                'periode_mulai' => ['required', 'date'],
+                'periode_mulai' => ['required', 'date', 'after_or_equal:batas_pendaftaran'],
                 'periode_selesai' => ['required', 'date', 'after_or_equal:periode_mulai'],
             ],
             'lomba' => $umum + [
                 'persyaratan' => ['nullable', 'string', 'max:5000'],
                 'tingkat' => ['required', Rule::in(CariInformasiRequest::TINGKAT_LOMBA)],
-                'tanggal_mulai' => ['required', 'date'],
+                'tanggal_mulai' => ['required', 'date', 'after_or_equal:batas_pendaftaran'],
                 'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
             ],
             'beasiswa' => $umum + [
@@ -75,7 +75,9 @@ class SimpanInformasiRequest extends FormRequest
     {
         return [
             'batas_pendaftaran.after_or_equal' => 'Batas pendaftaran tidak boleh sebelum hari ini.',
+            'periode_mulai.after_or_equal' => 'Periode mulai tidak boleh sebelum batas pendaftaran.',
             'periode_selesai.after_or_equal' => 'Periode selesai tidak boleh sebelum periode mulai.',
+            'tanggal_mulai.after_or_equal' => 'Tanggal lomba tidak boleh sebelum batas pendaftaran.',
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
         ];
     }
