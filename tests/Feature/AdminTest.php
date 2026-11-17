@@ -232,6 +232,64 @@ class AdminTest extends TestCase
         $this->assertSame(Mitra::STATUS_DISETUJUI, $mitra->mitra->fresh()->status_verifikasi);
     }
 
+    public function test_menolak_mitra_otomatis_menyembunyikan_seluruh_informasi_dan_tidak_tampil_saat_disetujui_kembali(): void
+    {
+        $pembaca = $this->pembaca();
+        $mitra = $this->buatMitra(Mitra::STATUS_DISETUJUI);
+        $magang = $this->buatItem($mitra, 'magang', ['judul' => 'Magang Mitra Sasaran']);
+        $lomba = $this->buatItem($mitra, 'lomba', ['judul' => 'Lomba Mitra Sasaran']);
+        $beasiswa = $this->buatItem($mitra, 'beasiswa', ['judul' => 'Beasiswa Mitra Sasaran']);
+
+        $mitraLain = $this->buatMitra(Mitra::STATUS_DISETUJUI);
+        $magangLain = $this->buatItem($mitraLain, 'magang', ['judul' => 'Magang Mitra Lain']);
+
+        $magangAdmin = $this->buatItem($this->admin, 'magang', ['judul' => 'Magang Admin']);
+
+        // Pastikan awalnya semua tayang dan bisa diakses
+        $this->actingAs($pembaca)->get(route('magang.show', $magang->id))->assertOk();
+        $this->actingAs($pembaca)->get(route('magang.index'))->assertSee('Magang Mitra Sasaran');
+
+        // Admin menolak mitra
+        $this->sebagaiAdmin()->patch(route('admin.mitra.tolak', $mitra->mitra->id))
+            ->assertSessionHas('status', fn (string $status) => str_contains($status, 'disembunyikan'));
+
+        $this->assertSame(Mitra::STATUS_DITOLAK, $mitra->mitra->fresh()->status_verifikasi);
+
+        // Ketiga informasi milik mitra berstatus disembunyikan
+        $this->assertSame('disembunyikan', $magang->fresh()->status);
+        $this->assertSame('disembunyikan', $lomba->fresh()->status);
+        $this->assertSame('disembunyikan', $beasiswa->fresh()->status);
+
+        // Detail publik 404
+        $this->actingAs($pembaca)->get(route('magang.show', $magang->id))->assertNotFound();
+        $this->actingAs($pembaca)->get(route('lomba.show', $lomba->id))->assertNotFound();
+        $this->actingAs($pembaca)->get(route('beasiswa.show', $beasiswa->id))->assertNotFound();
+
+        // Tidak muncul di daftar
+        $this->actingAs($pembaca)->get(route('magang.index'))->assertDontSee('Magang Mitra Sasaran');
+        $this->actingAs($pembaca)->get(route('lomba.index'))->assertDontSee('Lomba Mitra Sasaran');
+        $this->actingAs($pembaca)->get(route('beasiswa.index'))->assertDontSee('Beasiswa Mitra Sasaran');
+
+        // Informasi milik mitra lain dan admin tidak berubah
+        $this->assertSame('tayang', $magangLain->fresh()->status);
+        $this->assertSame('tayang', $magangAdmin->fresh()->status);
+        $this->actingAs($pembaca)->get(route('magang.show', $magangLain->id))->assertOk();
+        $this->actingAs($pembaca)->get(route('magang.show', $magangAdmin->id))->assertOk();
+        $this->actingAs($pembaca)->get(route('magang.index'))
+            ->assertSee('Magang Mitra Lain')
+            ->assertSee('Magang Admin');
+
+        // Menyetujui kembali mitra tidak mengubah status informasi (tetap disembunyikan)
+        $this->sebagaiAdmin()->patch(route('admin.mitra.setujui', $mitra->mitra->id))
+            ->assertSessionHas('status', fn (string $status) => str_contains($status, 'tidak ikut ditampilkan kembali') || str_contains($status, 'tidak otomatis'));
+        $this->assertSame(Mitra::STATUS_DISETUJUI, $mitra->mitra->fresh()->status_verifikasi);
+
+        $this->assertSame('disembunyikan', $magang->fresh()->status);
+        $this->assertSame('disembunyikan', $lomba->fresh()->status);
+        $this->assertSame('disembunyikan', $beasiswa->fresh()->status);
+        $this->actingAs($pembaca)->get(route('magang.show', $magang->id))->assertNotFound();
+    }
+
     // ---------- Pengguna ----------
 
     public function test_daftar_pengguna_tanpa_admin_dan_dengan_filter(): void
