@@ -7,6 +7,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen flex-col">
+    @php
+        $saya = auth()->user();
+        $bolehDirektori = ! $saya || in_array($saya->role, ['mahasiswa', 'dosen'], true);
+    @endphp
     @include('partials.nav')
     @include('partials.flash')
 
