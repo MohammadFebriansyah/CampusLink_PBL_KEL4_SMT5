@@ -549,6 +549,100 @@ class AdminTest extends TestCase
         $this->assertDatabaseCount('magang', 0);
     }
 
+    public function test_admin_magang_periode_2020_dengan_batas_desember_2026_ditolak(): void
+    {
+        $respon = $this->sebagaiAdmin()->post(route('admin.informasi.store', 'magang'), $this->payload('magang', [
+            'batas_pendaftaran' => '2026-12-31',
+            'periode_mulai' => '2020-01-01',
+            'periode_selesai' => '2020-06-01',
+        ]));
+
+        $respon->assertSessionHasErrors(['periode_mulai' => 'Periode mulai tidak boleh sebelum batas pendaftaran.']);
+        $this->assertDatabaseCount('magang', 0);
+    }
+
+    public function test_admin_lomba_berlangsung_sebelum_batas_pendaftaran_ditolak(): void
+    {
+        $respon = $this->sebagaiAdmin()->post(route('admin.informasi.store', 'lomba'), $this->payload('lomba', [
+            'batas_pendaftaran' => '2026-12-31',
+            'tanggal_mulai' => '2026-11-06',
+            'tanggal_selesai' => '2026-11-07',
+        ]));
+
+        $respon->assertSessionHasErrors(['tanggal_mulai' => 'Tanggal lomba tidak boleh sebelum batas pendaftaran.']);
+        $this->assertDatabaseCount('lomba', 0);
+    }
+
+    public function test_admin_kombinasi_benar_mulai_sama_dengan_atau_setelah_batas_diterima(): void
+    {
+        $batas = now()->addDays(20)->toDateString();
+
+        // Mulai sama dengan batas pendaftaran
+        $this->sebagaiAdmin()->post(route('admin.informasi.store', 'magang'), $this->payload('magang', [
+            'batas_pendaftaran' => $batas,
+            'periode_mulai' => $batas,
+            'periode_selesai' => now()->addDays(60)->toDateString(),
+        ]))->assertSessionHasNoErrors();
+
+        $this->sebagaiAdmin()->post(route('admin.informasi.store', 'lomba'), $this->payload('lomba', [
+            'batas_pendaftaran' => $batas,
+            'tanggal_mulai' => $batas,
+            'tanggal_selesai' => now()->addDays(25)->toDateString(),
+        ]))->assertSessionHasNoErrors();
+
+        // Mulai setelah batas pendaftaran
+        $setelah = now()->addDays(25)->toDateString();
+        $this->sebagaiAdmin()->post(route('admin.informasi.store', 'magang'), $this->payload('magang', [
+            'batas_pendaftaran' => $batas,
+            'periode_mulai' => $setelah,
+            'periode_selesai' => now()->addDays(70)->toDateString(),
+        ]))->assertSessionHasNoErrors();
+
+        $this->sebagaiAdmin()->post(route('admin.informasi.store', 'lomba'), $this->payload('lomba', [
+            'batas_pendaftaran' => $batas,
+            'tanggal_mulai' => $setelah,
+            'tanggal_selesai' => now()->addDays(30)->toDateString(),
+        ]))->assertSessionHasNoErrors();
+    }
+
+    public function test_admin_menutup_pendaftaran_lebih_awal_lewat_ubah_tetap_berhasil(): void
+    {
+        $mitra = $this->buatMitra();
+        $magang = $this->buatItem($mitra, 'magang');
+        $lomba = $this->buatItem($mitra, 'lomba');
+        $lebihAwal = now()->addDays(2)->toDateString();
+
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $magang->id]), $this->payload('magang', [
+            'batas_pendaftaran' => $lebihAwal,
+        ]))->assertSessionHasNoErrors();
+
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['lomba', $lomba->id]), $this->payload('lomba', [
+            'batas_pendaftaran' => $lebihAwal,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame($lebihAwal, $magang->fresh()->batas_pendaftaran->toDateString());
+        $this->assertSame($lebihAwal, $lomba->fresh()->batas_pendaftaran->toDateString());
+    }
+
+    public function test_admin_ubah_dengan_mulai_sebelum_batas_pendaftaran_ditolak(): void
+    {
+        $mitra = $this->buatMitra();
+        $magang = $this->buatItem($mitra, 'magang');
+        $lomba = $this->buatItem($mitra, 'lomba');
+
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['magang', $magang->id]), $this->payload('magang', [
+            'batas_pendaftaran' => '2026-12-31',
+            'periode_mulai' => '2020-01-01',
+            'periode_selesai' => '2020-06-01',
+        ]))->assertSessionHasErrors(['periode_mulai' => 'Periode mulai tidak boleh sebelum batas pendaftaran.']);
+
+        $this->sebagaiAdmin()->put(route('admin.informasi.update', ['lomba', $lomba->id]), $this->payload('lomba', [
+            'batas_pendaftaran' => '2026-12-31',
+            'tanggal_mulai' => '2026-11-06',
+            'tanggal_selesai' => '2026-11-07',
+        ]))->assertSessionHasErrors(['tanggal_mulai' => 'Tanggal lomba tidak boleh sebelum batas pendaftaran.']);
+    }
+
     public function test_admin_mengubah_dan_menghapus_informasi_milik_mitra(): void
     {
         $mitra = $this->buatMitra();

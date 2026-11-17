@@ -26,7 +26,7 @@ class InformasiSeeder extends Seeder
             'lokasi' => 'Malang (hibrid)',
             'periode_mulai' => now()->addMonths(2)->startOfMonth(),
             'periode_selesai' => now()->addMonths(5)->startOfMonth(),
-            'batas_pendaftaran' => now()->addDays(30),
+            'batas_pendaftaran' => now()->addDays(28),
             'kontak' => 'hrd@nusantaratech.example',
             'tautan_pendaftaran' => 'https://nusantaratech.example/magang/web',
             'cara_daftar' => 'internal',
