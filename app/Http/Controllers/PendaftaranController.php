@@ -32,13 +32,13 @@ class PendaftaranController extends Controller
         $f = $request->validated();
         $bagian = $f['bagian'] ?? 'pendaftaran';
         $status = array_key_exists($f['status'] ?? '', StatusPeninjauan::LABEL) ? $f['status'] : '';
-        $judulCocok = fn (string $v) => fn (Builder $q) => $q->whereLike('judul', "%{$v}%");
+        $judulCocok = fn (string $v) => fn (Builder $q) => $q->whereMengandung('judul', $v);
 
         $query = $bagian === 'bimbingan'
             ? $user->bimbinganDiajukan()->with(['informasi', 'dosen'])
                 ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($q) => $q
                     ->whereHasMorph('informasi', array_values(Informasi::MODEL), $judulCocok($v))
-                    ->orWhereHas('dosen', fn ($d) => $d->whereLike('name', "%{$v}%"))))
+                    ->orWhereHas('dosen', fn ($d) => $d->whereMengandung('name', $v))))
             : $user->pendaftaran()->with('informasi')
                 ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHasMorph('informasi', array_values(Informasi::MODEL), $judulCocok($v)));
         $query->when($status, fn ($q, $v) => $q->where('status', $v));

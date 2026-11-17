@@ -34,7 +34,7 @@ class MitraInformasiController extends Controller
         // Hanya milik mitra ini.
         $query = $request->user()->{$kategori}()
             ->withCount(['pendaftaran', 'pendaftaran as menunggu_count' => fn ($q) => $q->where('status', 'menunggu')])
-            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereLike('judul', "%{$v}%"));
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereMengandung('judul', $v));
 
         // Bawaan: terbaru di atas.
         $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 10);

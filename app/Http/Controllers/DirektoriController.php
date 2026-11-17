@@ -116,6 +116,6 @@ class DirektoriController extends Controller
                 }
             })
             ->when($filter['keahlian'] ?? null, fn ($q, $id) => $q->whereHas('keahlian', fn ($k) => $k->where('keahlian.id', $id)))
-            ->when($filter['q'] ?? null, fn ($q, $nama) => $q->whereLike('name', "%{$nama}%"));
+            ->when($filter['q'] ?? null, fn ($q, $nama) => $q->whereMengandung('name', $nama));
     }
 }

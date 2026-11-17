@@ -33,7 +33,7 @@ class AdminInformasiController extends Controller
             ->with('user:id,name,role')   // nama pembuat, tanpa N+1
             ->withCount('pendaftaran')
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(
-                fn ($q) => $q->whereLike('judul', "%{$v}%")->orWhereLike('penyelenggara', "%{$v}%")
+                fn ($q) => $q->whereMengandung('judul', $v)->orWhereMengandung('penyelenggara', $v)
             ))
             ->when($f['tayang'] ?? null, fn ($q, $v) => match ($v) {
                 'disembunyikan' => $q->where('status', $model::STATUS_DISEMBUNYIKAN),

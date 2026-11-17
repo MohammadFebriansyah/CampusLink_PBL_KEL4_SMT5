@@ -23,8 +23,8 @@ class AdminMitraController extends Controller
         $query = Mitra::with('user')
             ->where('status_verifikasi', $status)
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(
-                fn ($q) => $q->whereLike('nama_organisasi', "%{$v}%")
-                    ->orWhereHas('user', fn ($u) => $u->whereLike('name', "%{$v}%")->orWhereLike('email', "%{$v}%"))
+                fn ($q) => $q->whereMengandung('nama_organisasi', $v)
+                    ->orWhereHas('user', fn ($u) => $u->whereMengandung('name', $v)->orWhereMengandung('email', $v))
             ));
 
         // Bawaan: yang mendaftar lebih dulu ditangani lebih dulu.

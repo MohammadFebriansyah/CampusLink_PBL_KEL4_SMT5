@@ -30,7 +30,7 @@ class AdminPenggunaController extends Controller
             ->when($f['peran'] ?? null, fn ($q, $v) => $q->where('role', $v))
             ->when($f['akun'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(
-                fn ($q) => $q->whereLike('name', "%{$v}%")->orWhereLike('email', "%{$v}%")
+                fn ($q) => $q->whereMengandung('name', $v)->orWhereMengandung('email', $v)
             ))
             ->with(['mahasiswa', 'dosen', 'mitra']);   // eager loading, tanpa N+1
 

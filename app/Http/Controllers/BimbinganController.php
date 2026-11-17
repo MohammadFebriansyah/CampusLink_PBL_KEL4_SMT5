@@ -150,7 +150,7 @@ class BimbinganController extends Controller
 
         $query = (clone $semua)->where('status', $status)
             ->with(['informasi.user', 'mahasiswa.mahasiswa', 'mahasiswa.keahlian'])
-            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHas('mahasiswa', fn ($m) => $m->whereLike('name', "%{$v}%")));
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->whereHas('mahasiswa', fn ($m) => $m->whereMengandung('name', $v)));
 
         $perHalaman = Daftar::perHalaman($f['per_halaman'] ?? null, 15);
         $urutan = Urutan::terapkan($query, $f['urut'] ?? null, $f['arah'] ?? null, [

@@ -54,8 +54,7 @@ class InformasiController extends Controller
             ->when($kata !== '', function ($query) use ($kata, $meta) {
                 $query->where(function ($query) use ($kata, $meta) {
                     foreach ($meta['kolom_cari'] as $i => $kolom) {
-                        // whereLike tidak membedakan huruf besar/kecil (ILIKE di PostgreSQL).
-                        $i === 0 ? $query->whereLike($kolom, "%{$kata}%") : $query->orWhereLike($kolom, "%{$kata}%");
+                        $i === 0 ? $query->whereMengandung($kolom, $kata) : $query->orWhereMengandung($kolom, $kata);
                     }
                 });
             })
