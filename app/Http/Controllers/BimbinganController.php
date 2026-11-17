@@ -178,12 +178,29 @@ class BimbinganController extends Controller
     private function putuskan(Request $request, string $id, string $status, string $pesan): RedirectResponse
     {
         $bimbingan = $request->user()->bimbinganMasuk()->findOrFail($id); // hanya yang ditujukan ke dosen ini
+
+        // Keputusan bersifat final: hanya permintaan bimbingan berstatus menunggu yang bisa dijawab.
+        if ($bimbingan->status !== Bimbingan::STATUS_MENUNGGU) {
+            return back()->with('galat', 'Permintaan bimbingan ini sudah dijawab dan tidak bisa diubah.');
+        }
+
         $data = $request->validate(['catatan' => ['nullable', 'string', 'max:1000']]);
 
-        $bimbingan->status = $status;
-        $bimbingan->catatan = $data['catatan'] ?? null;
-        $bimbingan->ditinjau_pada = now();
-        $bimbingan->save();
+        $now = now();
+        // Update bersyarat untuk menghindari balapan antar dua permintaan konkuren.
+        $terubah = $request->user()->bimbinganMasuk()
+            ->where('id', $bimbingan->id)
+            ->where('status', Bimbingan::STATUS_MENUNGGU)
+            ->update([
+                'status' => $status,
+                'catatan' => $data['catatan'] ?? null,
+                'ditinjau_pada' => $now,
+                'updated_at' => $now,
+            ]);
+
+        if ($terubah === 0) {
+            return back()->with('galat', 'Permintaan bimbingan ini sudah dijawab dan tidak bisa diubah.');
+        }
 
         return back()->with('status', $pesan);
     }
