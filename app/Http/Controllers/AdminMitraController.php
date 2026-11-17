@@ -10,6 +10,7 @@ use App\Support\Urutan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 /** Verifikasi akun mitra: setujui atau tolak (FA-03, UC-08). */
 class AdminMitraController extends Controller
@@ -49,12 +50,28 @@ class AdminMitraController extends Controller
 
     public function setujui(string $id): RedirectResponse
     {
-        return $this->ubahStatus($id, Mitra::STATUS_DISETUJUI, 'Akun mitra disetujui. Mitra kini bisa masuk.');
+        return $this->ubahStatus(
+            $id,
+            Mitra::STATUS_DISETUJUI,
+            'Akun mitra disetujui. Mitra kini bisa masuk. Informasi milik mitra yang pernah disembunyikan tidak ikut ditampilkan kembali; atur lewat menu informasi.'
+        );
     }
 
     public function tolak(string $id): RedirectResponse
     {
-        return $this->ubahStatus($id, Mitra::STATUS_DITOLAK, 'Akun mitra ditolak. Mitra tidak bisa masuk.');
+        $mitra = Mitra::findOrFail($id);
+
+        DB::transaction(function () use ($mitra) {
+            $mitra->status_verifikasi = Mitra::STATUS_DITOLAK;
+            $mitra->save();
+
+            foreach (['magang', 'lomba', 'beasiswa'] as $kategori) {
+                // Lewat query builder relasi: status memang tidak ada di $fillable model.
+                $mitra->user->{$kategori}()->update(['status' => 'disembunyikan']);
+            }
+        });
+
+        return back()->with('status', 'Akun mitra ditolak. Mitra tidak bisa masuk. Seluruh informasi milik mitra ikut disembunyikan.');
     }
 
     private function ubahStatus(string $id, string $status, string $pesan): RedirectResponse
