@@ -8,6 +8,7 @@ use App\Models\Magang;
 use App\Models\Mitra;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Gate;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -491,5 +492,127 @@ class MitraInformasiTest extends TestCase
             $this->assertTrue(Gate::forUser($a)->allows('create', $model));
             $this->assertFalse(Gate::forUser($mahasiswa)->allows('create', $model));
         }
+    }
+
+    // ---------- Sinkronisasi penyelenggara saat ganti nama organisasi ----------
+
+    public function test_ganti_nama_organisasi_memperbarui_penyelenggara_tiga_kategori(): void
+    {
+        $mitra = $this->buatMitra('sync@mitra.example', 'PT Nusantara Teknologi');
+        $magangItem = $mitra->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Nusantara Teknologi']);
+        $lombaItem = $mitra->lomba()->create($this->payload('lomba') + ['penyelenggara' => 'PT Nusantara Teknologi']);
+        $beasiswaItem = $mitra->beasiswa()->create($this->payload('beasiswa') + ['penyelenggara' => 'PT Nusantara Teknologi']);
+
+        $this->actingAs($mitra)->put(route('mitra.profil.update'), [
+            'name' => $mitra->name,
+            'nama_organisasi' => 'PT Nusantara Baru',
+            'kontak' => $mitra->mitra->kontak,
+        ])->assertRedirect(route('mitra.profil.show'));
+
+        $this->assertSame('PT Nusantara Baru', $magangItem->fresh()->penyelenggara);
+        $this->assertSame('PT Nusantara Baru', $lombaItem->fresh()->penyelenggara);
+        $this->assertSame('PT Nusantara Baru', $beasiswaItem->fresh()->penyelenggara);
+    }
+
+    public function test_ganti_nama_organisasi_tidak_mengubah_informasi_mitra_lain(): void
+    {
+        $a = $this->buatMitra('a@mitra.example', 'PT Alpha');
+        $b = $this->buatMitra('b@mitra.example', 'PT Beta');
+
+        $milikA = $a->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Alpha']);
+        $milikB = $b->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Beta']);
+
+        $this->actingAs($a)->put(route('mitra.profil.update'), [
+            'name' => $a->name,
+            'nama_organisasi' => 'PT Alpha Baru',
+            'kontak' => $a->mitra->kontak,
+        ]);
+
+        $this->assertSame('PT Alpha Baru', $milikA->fresh()->penyelenggara);
+        $this->assertSame('PT Beta', $milikB->fresh()->penyelenggara);
+    }
+
+    public function test_ganti_nama_organisasi_tidak_mengubah_informasi_admin(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin@campuslink.test']);
+        $mitra = $this->buatMitra('m@mitra.example', 'PT Mitra');
+
+        // Admin membuat informasi sendiri dengan penyelenggara manual.
+        $milikAdmin = $admin->magang()->create($this->payload('magang') + ['penyelenggara' => 'Pemerintah Kota Malang']);
+
+        $this->actingAs($mitra)->put(route('mitra.profil.update'), [
+            'name' => $mitra->name,
+            'nama_organisasi' => 'PT Mitra Baru',
+            'kontak' => $mitra->mitra->kontak,
+        ]);
+
+        $this->assertSame('Pemerintah Kota Malang', $milikAdmin->fresh()->penyelenggara);
+    }
+
+    public function test_simpan_profil_tanpa_ganti_nama_tidak_update_penyelenggara(): void
+    {
+        $mitra = $this->buatMitra('no-change@mitra.example', 'PT Tetap');
+        $item = $mitra->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Tetap']);
+        $updatedAt = $item->fresh()->updated_at;
+
+        // Pastikan ada jeda waktu agar updated_at berubah jika ada update.
+        $this->travel(5)->seconds();
+
+        $this->actingAs($mitra)->put(route('mitra.profil.update'), [
+            'name' => $mitra->name,
+            'nama_organisasi' => 'PT Tetap',   // sama, tidak berubah
+            'kontak' => '0812-9999-0000',       // kontak berubah, tapi nama sama
+        ]);
+
+        // updated_at informasi seharusnya tidak berubah.
+        $this->assertTrue(
+            $updatedAt->equalTo($item->fresh()->updated_at),
+            'Informasi seharusnya tidak diperbarui karena nama organisasi tidak berubah.'
+        );
+    }
+
+    // ---------- Perintah selaraskan penyelenggara ----------
+
+    public function test_perintah_selaraskan_memperbaiki_data_usang(): void
+    {
+        $mitra = $this->buatMitra('stale@mitra.example', 'PT Baru');
+        // Simulasikan data usang: penyelenggara masih nama lama.
+        $magang = $mitra->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Lama']);
+        $lomba = $mitra->lomba()->create($this->payload('lomba') + ['penyelenggara' => 'PT Lama']);
+        $beasiswa = $mitra->beasiswa()->create($this->payload('beasiswa') + ['penyelenggara' => 'PT Lama']);
+
+        Artisan::call('informasi:selaraskan-penyelenggara');
+
+        $this->assertSame('PT Baru', $magang->fresh()->penyelenggara);
+        $this->assertSame('PT Baru', $lomba->fresh()->penyelenggara);
+        $this->assertSame('PT Baru', $beasiswa->fresh()->penyelenggara);
+    }
+
+    public function test_perintah_selaraskan_idempoten(): void
+    {
+        $mitra = $this->buatMitra('idem@mitra.example', 'PT Final');
+        $item = $mitra->magang()->create($this->payload('magang') + ['penyelenggara' => 'PT Usang']);
+
+        Artisan::call('informasi:selaraskan-penyelenggara');
+        $this->assertSame('PT Final', $item->fresh()->penyelenggara);
+
+        // Jalankan kedua kali — tidak ada perubahan.
+        $updatedAt = $item->fresh()->updated_at;
+        $this->travel(5)->seconds();
+        Artisan::call('informasi:selaraskan-penyelenggara');
+        $this->assertTrue(
+            $updatedAt->equalTo($item->fresh()->updated_at),
+            'Eksekusi kedua seharusnya tidak mengubah apa pun.'
+        );
+    }
+
+    public function test_perintah_selaraskan_tidak_mengubah_informasi_admin(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'adm@campuslink.test']);
+        $milikAdmin = $admin->magang()->create($this->payload('magang') + ['penyelenggara' => 'Pemkot Malang']);
+
+        Artisan::call('informasi:selaraskan-penyelenggara');
+
+        $this->assertSame('Pemkot Malang', $milikAdmin->fresh()->penyelenggara);
     }
 }
