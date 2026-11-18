@@ -58,4 +58,25 @@ class FooterDirektoriTest extends TestCase
             }
         }
     }
+
+    /**
+     * Tombol "Buka direktori" di isi beranda (bukan hanya navbar dan footer) mengikuti aturan yang sama:
+     * admin dan mitra membukanya menghasilkan 403, jadi tombolnya tidak boleh ada.
+     */
+    #[DataProvider('peranDirektori')]
+    public function test_beranda_tidak_memuat_tombol_direktori_untuk_peran_yang_tidak_berhak(?string $peran, bool $bolehDirektori): void
+    {
+        if ($peran !== null) {
+            $this->actingAs(User::factory()->create(['role' => $peran]));
+        }
+
+        $respons = $this->get(route('home'))->assertOk();
+
+        if ($bolehDirektori) {
+            $this->assertSame(2, substr_count($respons->getContent(), '>Buka direktori'), 'Dua tombol Buka direktori harus tampil.');
+        } else {
+            $respons->assertDontSee('Buka direktori');
+            $this->assertStringNotContainsString('href="'.route('direktori.index').'"', $respons->getContent());
+        }
+    }
 }

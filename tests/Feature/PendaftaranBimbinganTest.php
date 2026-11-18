@@ -635,4 +635,77 @@ class PendaftaranBimbinganTest extends TestCase
             ->assertSessionHas('galat', 'Permintaan bimbingan ini sudah dijawab dan tidak bisa diubah.');
         $this->assertSame('ditolak', $b2->fresh()->status);
     }
+
+    // ---------- Tautan ke informasi yang disembunyikan admin ----------
+
+    /** Daftar, terima, ajukan bimbingan, lalu admin menyembunyikan informasinya. */
+    private function skenarioInformasiDisembunyikan(): array
+    {
+        $mhs = $this->mahasiswa();
+        $dosen = $this->dosen();
+        $pemilik = $this->mitra();
+        $item = $this->magang($pemilik);
+
+        $this->actingAs($mhs)->post(route('pendaftaran.store', ['magang', $item->id]), ['cv' => $this->cv()]);
+        $this->actingAs($pemilik)->patch(route('mitra.pendaftar.terima', Pendaftaran::sole()->id));
+        $this->actingAs($mhs)->post(route('bimbingan.store', ['magang', $item->id]), ['dosen_id' => $dosen->id]);
+
+        $item->status = 'disembunyikan';
+        $item->save();
+
+        return [$mhs, $dosen, $pemilik, $item];
+    }
+
+    public function test_dasbor_mahasiswa_tidak_menautkan_informasi_yang_disembunyikan(): void
+    {
+        [$mhs, , , $item] = $this->skenarioInformasiDisembunyikan();
+        $tautan = 'href="'.route('magang.show', $item->id).'"';
+
+        // Sebelum disembunyikan, judulnya berupa tautan.
+        $item->status = 'tayang';
+        $item->save();
+        $this->actingAs($mhs)->get(route('dasbor'))->assertOk()->assertSee($tautan, false);
+
+        $item->status = 'disembunyikan';
+        $item->save();
+        $this->actingAs($mhs)->get(route('dasbor'))
+            ->assertOk()
+            ->assertSee('Magang Uji')
+            ->assertSee('disembunyikan admin')
+            ->assertDontSee($tautan, false);
+        $this->actingAs($mhs)->get(route('magang.show', $item->id))->assertNotFound();
+    }
+
+    public function test_halaman_tinjauan_tidak_menautkan_informasi_yang_disembunyikan(): void
+    {
+        [, , $pemilik, $item] = $this->skenarioInformasiDisembunyikan();
+        $tautan = 'href="'.route('magang.show', $item->id).'"';
+
+        $this->actingAs($pemilik)->get(route('mitra.pendaftar.show', Pendaftaran::sole()->id))
+            ->assertOk()
+            ->assertSee('Magang Uji')
+            ->assertSee('disembunyikan admin')
+            ->assertDontSee($tautan, false);
+
+        $item->status = 'tayang';
+        $item->save();
+        $this->actingAs($pemilik)->get(route('mitra.pendaftar.show', Pendaftaran::sole()->id))
+            ->assertOk()
+            ->assertSee($tautan, false)
+            ->assertDontSee('disembunyikan admin');
+    }
+
+    public function test_permintaan_bimbingan_dosen_tanpa_url_untuk_informasi_yang_disembunyikan(): void
+    {
+        [, $dosen, , $item] = $this->skenarioInformasiDisembunyikan();
+
+        $url = fn () => $this->actingAs($dosen)->getJson(route('bimbingan.index'))
+            ->assertOk()->json('data.0.informasi.url');
+
+        $this->assertNull($url());
+
+        $item->status = 'tayang';
+        $item->save();
+        $this->assertSame(route('magang.show', $item->id), $url());
+    }
 }

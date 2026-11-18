@@ -6,7 +6,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 
-/** Setelah logout Fortify (sesi sudah diinvalidasi dan token CSRF diganti): ke beranda. */
+/** Setelah logout Fortify (sesi sudah diinvalidasi dan token CSRF diganti): ke halaman masuk. */
 class LogoutResponse implements LogoutResponseContract
 {
     /**
@@ -14,6 +14,6 @@ class LogoutResponse implements LogoutResponseContract
      */
     public function toResponse($request): RedirectResponse
     {
-        return redirect()->route('home');
+        return redirect()->route('login');
     }
 }

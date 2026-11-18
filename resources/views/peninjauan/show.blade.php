@@ -143,11 +143,20 @@
             </x-admin.card>
 
             @if ($info)
-                <a href="{{ route($p->informasi_type . '.show', $info) }}" class="block rounded-xl border border-border bg-card p-5 text-sm text-foreground shadow-sm transition hover:border-foreground/20">
-                    <span class="block text-xs text-muted-foreground">Kegiatan</span>
-                    <span class="mt-0.5 block font-semibold">{{ $info->judul }}</span>
-                    <span class="block text-muted-foreground">Batas pendaftaran {{ \App\Support\Tanggal::panjang($info->batas_pendaftaran) }}</span>
-                </a>
+                @if ($info->status === 'tayang')
+                    <a href="{{ route($p->informasi_type . '.show', $info) }}" class="block rounded-xl border border-border bg-card p-5 text-sm text-foreground shadow-sm transition hover:border-foreground/20">
+                        <span class="block text-xs text-muted-foreground">Kegiatan</span>
+                        <span class="mt-0.5 block font-semibold">{{ $info->judul }}</span>
+                        <span class="block text-muted-foreground">Batas pendaftaran {{ \App\Support\Tanggal::panjang($info->batas_pendaftaran) }}</span>
+                    </a>
+                @else
+                    {{-- Disembunyikan admin: halaman detailnya 404, jadi bukan tautan. --}}
+                    <div class="block rounded-xl border border-border bg-card p-5 text-sm text-foreground shadow-sm">
+                        <span class="block text-xs text-muted-foreground">Kegiatan (disembunyikan admin)</span>
+                        <span class="mt-0.5 block font-semibold">{{ $info->judul }}</span>
+                        <span class="block text-muted-foreground">Batas pendaftaran {{ \App\Support\Tanggal::panjang($info->batas_pendaftaran) }}</span>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
