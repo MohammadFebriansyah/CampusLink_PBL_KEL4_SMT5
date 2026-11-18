@@ -9,7 +9,7 @@
 <body class="flex min-h-screen flex-col">
     @php
         $saya = auth()->user();
-        $bolehDirektori = ! $saya || in_array($saya->role, ['mahasiswa', 'dosen'], true);
+        $bolehDirektori = \App\Support\Akses::bolehDirektori($saya);
     @endphp
     @include('partials.nav')
     @include('partials.flash')

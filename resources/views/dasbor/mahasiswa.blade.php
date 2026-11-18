@@ -40,8 +40,11 @@
                             <li class="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
                                 <div class="min-w-0">
                                     <p class="text-xs font-medium text-accent-dark dark:text-accent">{{ \App\Support\Informasi::LABEL[$p->informasi_type] ?? '' }}</p>
-                                    @if ($p->informasi)
+                                    @if ($p->informasi && $p->informasi->status === 'tayang')
                                         <a href="{{ route($p->informasi_type . '.show', $p->informasi_id) }}" class="block truncate text-sm font-medium hover:underline">{{ $p->informasi->judul }}</a>
+                                    @elseif ($p->informasi)
+                                        {{-- Disembunyikan admin: halaman detailnya 404, jadi tampil sebagai teks biasa. --}}
+                                        <p class="truncate text-sm font-medium">{{ $p->informasi->judul }} <span class="font-normal text-muted-foreground">(disembunyikan admin)</span></p>
                                     @else
                                         <p class="text-sm text-muted-foreground">Informasi sudah dihapus</p>
                                     @endif

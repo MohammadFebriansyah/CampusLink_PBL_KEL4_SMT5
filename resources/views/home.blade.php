@@ -154,7 +154,9 @@
 
                 <div class="mt-8 flex animate-rise flex-wrap items-center gap-3 [animation-delay:320ms]">
                     <a href="{{ route('register') }}" class="btn btn-primary px-6 py-3">Buat akun gratis</a>
-                    <a href="{{ route('direktori.index') }}" class="btn px-5 py-3 text-paper-white ring-1 ring-white/25 hover:bg-white/10">Buka direktori</a>
+                    @if (\App\Support\Akses::bolehDirektori(auth()->user()))
+                        <a href="{{ route('direktori.index') }}" class="btn px-5 py-3 text-paper-white ring-1 ring-white/25 hover:bg-white/10">Buka direktori</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -258,7 +260,9 @@
                     </li>
                 @endforeach
             </ul>
-            <a href="{{ route('direktori.index') }}" class="btn btn-outline mt-8">Buka direktori &rarr;</a>
+            @if (\App\Support\Akses::bolehDirektori(auth()->user()))
+                <a href="{{ route('direktori.index') }}" class="btn btn-outline mt-8">Buka direktori &rarr;</a>
+            @endif
         </div>
 
         {{-- Contoh tampilan fiktif. Profil asli hanya terlihat oleh mahasiswa dan dosen yang sudah masuk. --}}

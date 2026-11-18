@@ -248,8 +248,21 @@ class AuthTest extends TestCase
             ->assertRedirect(route('profil.show'));
         $this->assertAuthenticatedAs($user);
 
-        $this->post(route('logout'))->assertRedirect(route('home'));
+        $this->post(route('logout'))->assertRedirect(route('login'));
         $this->assertGuest();
+    }
+
+    /** BUG_CL_0003 sampai 0005: semua peran kembali ke halaman masuk setelah keluar, bukan ke beranda. */
+    public function test_semua_peran_diarahkan_ke_halaman_masuk_setelah_logout(): void
+    {
+        foreach ([User::ROLE_MAHASISWA, User::ROLE_DOSEN, User::ROLE_ADMIN, User::ROLE_MITRA] as $peran) {
+            $user = User::factory()->createOne(['role' => $peran]);
+
+            $this->actingAs($user)->post(route('logout'))->assertRedirect(route('login'));
+            $this->assertGuest();
+        }
+
+        $this->get(route('login'))->assertOk();
     }
 
     public function test_password_salah_ditolak(): void

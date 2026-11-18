@@ -35,7 +35,8 @@ class BimbinganMasukResource extends JsonResource
             'informasi' => $info ? [
                 'judul' => $info->judul,
                 'penyelenggara' => $info->penyelenggara,
-                'url' => route($this->informasi_type.'.show', $info->id),
+                // Yang disembunyikan admin tidak bisa dibuka detailnya (404), jadi tanpa tautan.
+                'url' => $info->status === 'tayang' ? route($this->informasi_type.'.show', $info->id) : null,
                 // Kegiatan CampusLink: mahasiswa pasti sudah diterima (syarat mengajukan); kegiatan luar: lihat bukti.
                 'lewat_campuslink' => $info->lewatCampuslink(),
             ] : null,

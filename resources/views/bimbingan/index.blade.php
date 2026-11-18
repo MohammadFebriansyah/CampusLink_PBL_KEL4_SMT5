@@ -58,7 +58,8 @@
                         <span class="font-semibold text-accent-dark dark:text-accent" x-text="b.kategori"></span>
                         <template x-if="b.informasi">
                             <span>
-                                <a :href="b.informasi.url" class="font-medium hover:underline" x-text="b.informasi.judul"></a>
+                                <a x-show="b.informasi.url" :href="b.informasi.url" class="font-medium hover:underline" x-text="b.informasi.judul"></a>
+                                <span x-show="! b.informasi.url" class="font-medium" x-text="b.informasi.judul + ' (disembunyikan admin)'"></span>
                                 <span class="block text-muted-foreground" x-text="b.informasi.penyelenggara"></span>
                             </span>
                         </template>
