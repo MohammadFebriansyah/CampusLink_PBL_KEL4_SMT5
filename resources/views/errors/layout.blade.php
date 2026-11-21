@@ -23,6 +23,9 @@
             @yield('actions')
             <a href="{{ url('/') }}" class="btn btn-primary">Kembali ke beranda</a>
         </div>
+        @if ($kodeReferensi = request()->attributes->get('request_id'))
+            <p class="mt-6 text-xs text-graphite">Kode referensi: {{ $kodeReferensi }}</p>
+        @endif
     </main>
 </body>
 </html>

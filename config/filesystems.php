@@ -35,7 +35,7 @@ return [
             'root' => storage_path('app/private'),
             'serve' => true,
             'throw' => false,
-            'report' => false,
+            'report' => true, // kegagalan baca/tulis berkas dicatat ke log; perilaku tetap (tidak melempar)
         ],
 
         'public' => [
@@ -44,7 +44,7 @@ return [
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
-            'report' => false,
+            'report' => true,
         ],
 
         's3' => [

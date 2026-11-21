@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\StrukturLog;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -50,12 +51,39 @@ return [
     |
     */
 
+    // Catat juga HTTP 404 (bawaan mati karena pemindai bot membuatnya sangat berisik).
+    'catat_404' => (bool) env('LOG_404', false),
+
     'channels' => [
+
+        // Log aplikasi harian dalam JSON terstruktur (satu entri per baris), tanpa isi permintaan.
+        // Berkas: storage/logs/campuslink-YYYY-MM-DD.log, dirotasi tiap hari dan dihapus setelah LOG_DAILY_DAYS hari.
+        'json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/campuslink.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => (int) env('LOG_DAILY_DAYS', 14),
+            'permission' => 0640,
+            'tap' => [StrukturLog::class],
+            'replace_placeholders' => false,
+        ],
+
+        // Hanya error ke atas, disimpan lebih lama supaya masalah lama tetap bisa ditelusuri.
+        // Berkas: storage/logs/galat-YYYY-MM-DD.log
+        'galat' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/galat.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_ERROR_DAYS', 30),
+            'permission' => 0640,
+            'tap' => [StrukturLog::class],
+            'replace_placeholders' => false,
+        ],
 
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),
-            'ignore_exceptions' => false,
+            'ignore_exceptions' => true, // gagal menulis log (disk penuh, izin salah) tidak boleh menjatuhkan permintaan pengguna
         ],
 
         'single' => [
