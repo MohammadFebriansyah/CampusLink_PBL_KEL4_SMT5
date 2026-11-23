@@ -45,47 +45,9 @@ return [
     'batas_otp_per_ip' => (int) env('BATAS_OTP_PER_IP', 30),
 
     'jurusan' => [
-        'Administrasi Niaga' => [
-            'Administrasi Bisnis',
-            'Manajemen Pemasaran',
-            'Bahasa Inggris untuk Komunikasi Bisnis dan Profesional',
-            'Kearsipan', // perlu dicek: disebut sebagai prodi baru di satu sumber
-        ],
-        'Akuntansi' => [
-            'Akuntansi',
-            'Akuntansi Manajemen',
-            'Keuangan',
-        ],
-        'Teknik Elektro' => [
-            'Teknik Elektronika',
-            'Teknik Listrik',
-            'Teknik Telekomunikasi',
-            'Sistem Kelistrikan',
-            'Jaringan Telekomunikasi Digital',
-        ],
-        'Teknik Kimia' => [
-            'Teknik Kimia',
-            'Teknik Kimia Industri', // perlu dicek: hanya dari satu sumber lama
-        ],
-        'Teknik Mesin' => [
-            'Teknik Mesin',
-            'Teknik Mesin Produksi dan Perawatan',
-            'Teknik Otomotif Elektronik',
-            'Teknologi Rekayasa Otomotif',
-            'Teknologi Pemeliharaan Pesawat Udara', // perlu dicek: nama berbeda antar sumber
-        ],
-        'Teknik Sipil' => [
-            'Teknik Sipil',
-            'Teknologi Konstruksi Jalan, Jembatan dan Bangunan Air',
-            'Teknologi Pertambangan',
-            'Manajemen Rekayasa Konstruksi',
-            'Teknologi Rekayasa Konstruksi Jalan dan Jembatan',
-        ],
         'Teknologi Informasi' => [
-            'Teknik Informatika',
             'Sistem Informasi Bisnis',
-            'Manajemen Informatika',
-            'Pengembangan Piranti Lunak Situs',
+            'Teknik Informatika',
         ],
     ],
 ];
